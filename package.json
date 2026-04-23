@@ -1,7 +1,15 @@
 {
   "name": "pixelcraft",
   "version": "0.1.0",
+  "author": "Carlos Gonzalez <carlosglz1912>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carlosglz1912/pixelcraft"
+  },
+  "bugs": {
+    "url": "https://github.com/carlosglz1912/pixelcraft/issues"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
