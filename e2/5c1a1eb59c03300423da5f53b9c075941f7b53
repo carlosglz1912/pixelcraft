@@ -1,0 +1,23 @@
+package.json
+  2a5104ba3e3ed2fc 4,6-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "e25c1a1eb59c03300423da5f53b9c075941f7b53",
+  "prompts": {
+    "2a5104ba3e3ed2fc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2436b005effeqdkUbxGBhbAYzw",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 8,
+      "total_deletions": 0,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    }
+  }
+}
