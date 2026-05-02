@@ -283,8 +283,8 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
               }
 
               if (!result) {
-                console.info('[video.polling.result.pending]', { requestId })
-                failures = 0
+                failures += 1
+                console.info('[video.polling.result.pending]', { requestId, failures })
                 await new Promise((resolve) => window.setTimeout(resolve, 4000))
                 continue
               }
