@@ -1,0 +1,23 @@
+src/components/features/gallery.tsx
+  a28a38e697a4a09e 286-287
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "c272b726bcde7aaa9235288d81308f55ce8c8697",
+  "prompts": {
+    "a28a38e697a4a09e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2152f864bffeLAgUPYiaKwCNmj",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 161,
+      "total_deletions": 2,
+      "accepted_lines": 161,
+      "overriden_lines": 0
+    }
+  }
+}
