@@ -696,7 +696,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
           </div>
         ) : (
           <ScrollArea className="h-[calc(100vh-4.75rem)] h-[calc(100dvh-4.75rem)]">
-            <div className="grid auto-rows-auto grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 p-5">
+            <div className="grid auto-rows-auto grid-cols-[repeat(auto-fill,minmax(280px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 p-5">
               {pendingItems.map((item) =>
                 item.status === 'failed' ? (
                   <FailedGalleryCard key={item.id} item={item} />
