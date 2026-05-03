@@ -67,6 +67,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { AnimatePresence, motion, galleryItemVariants } from '@/lib/motion'
 
 const COST_TIER_CONFIG: Record<CostTier, { label: string; color: string }> = {
   free: { label: 'Gratis', color: 'bg-green-500' },
@@ -633,8 +634,18 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
               {pendingItems.map((item) => (
                 <PendingGalleryCard key={item.id} item={item} />
               ))}
+              <AnimatePresence mode="popLayout">
               {sortedItems.map((item, index) => (
-                <div key={item.id} className="group relative">
+                <motion.div
+                  key={item.id}
+                  layout
+                  variants={galleryItemVariants}
+                  initial="initial"
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit="exit"
+                  className="group relative animate-in fade-in slide-in-from-bottom-4 fill-mode-both"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
                   <button
                     type="button"
                     onClick={() => setSelected(item)}
@@ -692,8 +703,9 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                   >
                     <Download className="h-3.5 w-3.5" />
                   </Button>
-                </div>
+                </motion.div>
               ))}
+              </AnimatePresence>
             </div>
           </ScrollArea>
         )}
