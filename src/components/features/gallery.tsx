@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +32,7 @@ import { formatCostEstimate, formatCostEstimateMxn } from '@/lib/cost-estimate'
 import { createDownloadStem, downloadRemoteFile } from '@/lib/download'
 import { estimateImageTransformCostFromUrl } from '@/lib/image-dimensions'
 import { useGallery } from '@/stores/gallery'
+import { useCollections } from '@/stores/collections'
 import {
   BG_REMOVAL_MODELS,
   UPSCALE_MODELS,
@@ -45,6 +46,7 @@ import {
   type UpscaleModelId,
   type CostTier,
   type PendingMedia,
+  COLLECTION_COLORS,
 } from '@/types'
 import { EditHistory } from '@/components/features/edit-history'
 import {
@@ -68,6 +70,7 @@ import {
   AlertCircle,
   RotateCcw,
   X,
+  Check,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AnimatePresence, motion, galleryItemVariants } from '@/lib/motion'
@@ -234,6 +237,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
   const [bgRemovalModel, setBgRemovalModel] = useState<BgRemovalModelId>('fal-ai/imageutils/rembg')
   const [loadingAction, setLoadingAction] = useState<'upscale' | 'remove-bg' | null>(null)
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'type'>('newest')
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false)
 
   const router = useRouter()
   const items = useGallery((state) => state.items)
@@ -251,6 +255,11 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
   const hydrateFromR2 = useGallery((state) => state.hydrateFromR2)
   const migrateUnpersistedItems = useGallery((state) => state.migrateUnpersistedItems)
   const getEditHistory = useGallery((state) => state.getEditHistory)
+
+  const collections = useCollections((state) => state.collections)
+  const addItemsToCollection = useCollections((state) => state.addItems)
+  const removeItemsFromCollection = useCollections((state) => state.removeItems)
+  const getCollectionsForItem = useCollections((state) => state.getCollectionsForItem)
 
   const sortedItems = useMemo(() => {
     const sorted = [...items]
@@ -994,6 +1003,29 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                     ) : null}
 
                     {selected && (() => {
+                      const itemCollections = getCollectionsForItem(selected.id)
+                      return (
+                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
+                          <Label className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+                            Asignar a colección
+                          </Label>
+                          <Button
+                            onClick={() => setAssignDialogOpen(true)}
+                            variant="ghost"
+                            className="depth-secondary mt-3 h-11 w-full rounded-2xl border border-secondary/15 bg-secondary/10 text-secondary-tint hover:bg-secondary/15 hover:text-white"
+                          >
+                            <FolderOpen className="mr-2 h-4 w-4" />
+                            {collections.length === 0
+                              ? 'Sin colecciones'
+                              : itemCollections.length === 0
+                                ? 'Sin asignar'
+                                : `En ${itemCollections.length} colección${itemCollections.length !== 1 ? 'es' : ''}`}
+                          </Button>
+                        </div>
+                      )
+                    })()}
+
+                    {selected && (() => {
                       const history = getEditHistory(selected.id)
                       return history.length > 1 ? (
                         <EditHistory
@@ -1026,6 +1058,91 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                 </ScrollArea>
               </div>
             </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+        <DialogContent className="depth-mixed border-secondary/25 bg-slate-950/95 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <FolderOpen className="h-5 w-5 text-primary-tint" />
+              Asignar a colección
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona las colecciones donde quieres agregar este recurso.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selected && collections.length === 0 ? (
+            <div className="py-8 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10">
+                <FolderOpen className="h-6 w-6 text-secondary-tint" />
+              </div>
+              <p className="text-sm text-slate-400">Crea una colección primero</p>
+              {onSwitchTab && (
+                <Button
+                  onClick={() => {
+                    setAssignDialogOpen(false)
+                    onSwitchTab('collections')
+                  }}
+                  className="depth-primary mt-4 rounded-2xl border border-primary/25 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  Ir a colecciones
+                </Button>
+              )}
+            </div>
+          ) : selected ? (
+            <ScrollArea className="max-h-[50vh]">
+              <div className="space-y-1 pr-2">
+                {collections.map((collection) => {
+                  const isAssigned = collection.itemIds.includes(selected.id)
+                  const colorConfig = COLLECTION_COLORS[collection.color]
+
+                  return (
+                    <label
+                      key={collection.id}
+                      className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition ${
+                        isAssigned
+                          ? `${colorConfig.bg} ${colorConfig.border}`
+                          : 'border-secondary/15 bg-slate-900/50 hover:border-secondary/25 hover:bg-slate-900/70'
+                      }`}
+                    >
+                      <span
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                          isAssigned
+                            ? `${colorConfig.border} ${colorConfig.dot}`
+                            : 'border-secondary/30 bg-transparent'
+                        }`}
+                      >
+                        {isAssigned && <Check className="h-3 w-3 text-white" />}
+                      </span>
+                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${colorConfig.dot}`} />
+                      <span className="flex-1 truncate text-sm font-medium text-white">
+                        {collection.name}
+                      </span>
+                      <Badge variant="secondary" className="depth-secondary border border-secondary/20 bg-secondary/10 text-xs text-secondary-tint">
+                        {collection.itemIds.length}
+                      </Badge>
+                      <input
+                        type="checkbox"
+                        checked={isAssigned}
+                        onChange={() => {
+                          if (isAssigned) {
+                            removeItemsFromCollection(collection.id, [selected.id])
+                            toast.success(`Eliminado de "${collection.name}"`)
+                          } else {
+                            addItemsToCollection(collection.id, [selected.id])
+                            toast.success(`Añadido a "${collection.name}"`)
+                          }
+                        }}
+                        className="sr-only"
+                      />
+                    </label>
+                  )
+                })}
+              </div>
+            </ScrollArea>
           ) : null}
         </DialogContent>
       </Dialog>
