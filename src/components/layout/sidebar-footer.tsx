@@ -27,7 +27,7 @@ export function SidebarFooterExpanded({
     <div className="surface-primary border-t border-primary/20 p-4">
       <CostEstimatePreview
         estimate={estimate}
-        className="mb-3 border-primary/15 bg-slate-950/60"
+        className="mb-3 border-primary/20 bg-slate-950/60"
       />
       <Button
         onClick={onGenerate}

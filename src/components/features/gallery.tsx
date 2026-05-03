@@ -202,7 +202,7 @@ function FailedGalleryCard({ item }: { item: PendingMedia }) {
           <CostBadge tier={item.costTier} />
         </div>
       </div>
-      <div className="flex items-center gap-1 border-t border-secondary/10 px-3 py-2">
+      <div className="flex items-center gap-1 border-t border-secondary/15 px-3 py-2">
         <button
           type="button"
           onClick={handleRetry}

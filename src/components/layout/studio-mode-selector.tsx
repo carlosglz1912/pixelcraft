@@ -23,7 +23,7 @@ export function StudioModeSelector({ studioMode, onModeChange, sidebarCollapsed 
           }}
           className={`rounded-2xl border px-3 py-3 text-left transition ${
             studioMode === 'image'
-              ? 'depth-primary border-primary/40 bg-primary/12 text-white'
+              ? 'depth-primary border-primary/40 bg-primary/10 text-white'
               : 'depth-secondary border-secondary/20 bg-secondary/5 text-slate-300'
           }`}
         >
@@ -45,7 +45,7 @@ export function StudioModeSelector({ studioMode, onModeChange, sidebarCollapsed 
           }}
           className={`rounded-2xl border px-3 py-3 text-left transition ${
             studioMode === 'video'
-              ? 'depth-primary border-primary/40 bg-primary/12 text-white'
+              ? 'depth-primary border-primary/40 bg-primary/10 text-white'
               : 'depth-secondary border-secondary/20 bg-secondary/5 text-slate-300'
           }`}
         >
