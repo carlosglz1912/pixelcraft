@@ -1,0 +1,25 @@
+src/components/layout/app-tabs.tsx
+  224c512ba3dfeaa4 19-20,93,95,108-121,123-146,148,155
+src/components/layout/sidebar-header.tsx
+  224c512ba3dfeaa4 5,17,22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "4bee2bf0bcb05ddb26b8c9bb0f13da1492fae01b",
+  "prompts": {
+    "224c512ba3dfeaa4": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "3207570c-dc12-4095-b808-62254bb868d7",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 48,
+      "total_deletions": 27,
+      "accepted_lines": 48,
+      "overriden_lines": 0
+    }
+  }
+}
