@@ -1,0 +1,33 @@
+src/components/features/r2-manager.tsx
+  dcdfa2ec54383674 280
+src/components/features/gallery.tsx
+  dcdfa2ec54383674 690,722
+src/components/layout/sidebar-header.tsx
+  dcdfa2ec54383674 32
+src/components/layout/video-studio-panel.tsx
+  dcdfa2ec54383674 249,299,332,348,371,389,409,462,554,578,638,711,748,800,830,854,924,945,975,997,1022,1046,1070,1087,1104,1121
+src/components/layout/sidebar-footer.tsx
+  dcdfa2ec54383674 35,61
+src/components/layout/image-studio-panel.tsx
+  dcdfa2ec54383674 164,186,249,267,316,338,360,384,408,422,442,462,483,502,519,526,546
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "64073d13146d4ff91ff2107bac1aec4d9a545e16",
+  "prompts": {
+    "dcdfa2ec54383674": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "6a393b5e-e24d-4d14-87d0-5da50ca5c8a4",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 46,
+      "total_deletions": 46,
+      "accepted_lines": 46,
+      "overriden_lines": 0
+    }
+  }
+}
