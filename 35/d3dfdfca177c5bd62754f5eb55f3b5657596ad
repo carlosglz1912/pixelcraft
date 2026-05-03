@@ -1,0 +1,31 @@
+src/components/features/image-editor.tsx
+  7e2c4b8996dda0fb 15-16,401,423-424
+src/components/features/image-conversation.tsx
+  7e2c4b8996dda0fb 6,375
+src/components/gallery-picker.tsx
+  7e2c4b8996dda0fb 17
+src/components/features/r2-manager.tsx
+  7e2c4b8996dda0fb 245,268,367
+src/components/features/gallery.tsx
+  7e2c4b8996dda0fb 17,146,149-150,552,558,621-629,631-637,882,910
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "35d3dfdfca177c5bd62754f5eb55f3b5657596ad",
+  "prompts": {
+    "7e2c4b8996dda0fb": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "21eaa840-4dd0-44c9-9a1a-e9e1203c9950",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 35,
+      "total_deletions": 28,
+      "accepted_lines": 35,
+      "overriden_lines": 0
+    }
+  }
+}
