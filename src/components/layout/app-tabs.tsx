@@ -27,6 +27,7 @@ export function AppTabs() {
   const addToGallery = useGallery((state) => state.addWithPersistence)
   const addPending = useGallery((state) => state.addPending)
   const removePending = useGallery((state) => state.removePending)
+  const markPendingFailed = useGallery((state) => state.markPendingFailed)
 
   const [loading, setLoading] = useState(false)
 
@@ -42,6 +43,7 @@ export function AppTabs() {
     addToGallery,
     addPending,
     removePending,
+    markPendingFailed,
     setLoading,
     openPicker,
     openMultiPicker: () => {},
@@ -51,6 +53,7 @@ export function AppTabs() {
     addToGallery,
     addPending,
     removePending: (id: string) => removePending([id]),
+    markPendingFailed,
     setLoading,
     openPicker,
   })

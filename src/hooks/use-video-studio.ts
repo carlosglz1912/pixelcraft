@@ -57,6 +57,7 @@ export interface UseVideoStudioParams {
   addToGallery: (item: GeneratedMediaBase) => void
   addPending: (item: Omit<PendingMedia, 'id' | 'createdAt'>) => void
   removePending: (id: string) => void
+  markPendingFailed: (id: string, error: string) => void
   setLoading: (loading: boolean) => void
   openPicker: (setter: (url: string) => void, mediaType: 'image' | 'video') => void
 }
@@ -65,6 +66,7 @@ export function useVideoStudio({
   addToGallery,
   addPending,
   removePending,
+  markPendingFailed,
   setLoading,
   openPicker,
 }: UseVideoStudioParams) {

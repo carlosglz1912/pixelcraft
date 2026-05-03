@@ -64,6 +64,9 @@ import {
   Cloud,
   CloudOff,
   Upload,
+  AlertCircle,
+  RotateCcw,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AnimatePresence, motion, galleryItemVariants } from '@/lib/motion'
@@ -167,6 +170,59 @@ function PendingGalleryCard({ item }: { item: PendingMedia }) {
   )
 }
 
+function FailedGalleryCard({ item }: { item: PendingMedia }) {
+  const displayModel = getDisplayModel(item.model, item.type, item.metadata?.videoMode)
+  const dismissPending = useGallery((state) => state.dismissPending)
+
+  function handleRetry() {
+    dismissPending(item.id)
+    toast.info('Genera nuevamente con los mismos parámetros desde el panel lateral')
+  }
+
+  function handleDismiss() {
+    dismissPending(item.id)
+  }
+
+  return (
+    <div className="depth-mixed overflow-hidden rounded-2xl border border-red-500/20 bg-slate-900/78 text-left">
+      <div className="flex min-h-[120px] flex-col items-center justify-center gap-2 bg-red-950/30 px-4 py-6">
+        <AlertCircle className="h-8 w-8 text-red-400" />
+        <p className="max-w-full text-center text-xs text-red-400">
+          {item.error ?? 'Error desconocido'}
+        </p>
+      </div>
+      <div className="px-3 py-2.5">
+        <div className="flex items-center gap-1.5">
+          {item.type === 'video' ? (
+            <Video className="h-3.5 w-3.5 shrink-0 text-secondary-tint" />
+          ) : (
+            <ImageIcon className="h-3.5 w-3.5 shrink-0 text-primary-tint" />
+          )}
+          <p className="truncate text-xs font-medium text-white">{displayModel}</p>
+          <CostBadge tier={item.costTier} />
+        </div>
+      </div>
+      <div className="flex items-center gap-1 border-t border-secondary/10 px-3 py-2">
+        <button
+          type="button"
+          onClick={handleRetry}
+          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-primary-tint transition hover:bg-primary/10"
+        >
+          <RotateCcw className="h-3 w-3" />
+          Reintentar
+        </button>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-500 transition hover:text-white"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 interface GalleryProps {
   onSwitchTab?: (tab: 'gallery' | 'storage') => void
 }
@@ -185,6 +241,8 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
   const addWithPersistence = useGallery((state) => state.addWithPersistence)
   const addPending = useGallery((state) => state.addPending)
   const removePending = useGallery((state) => state.removePending)
+  const markPendingFailed = useGallery((state) => state.markPendingFailed)
+  const dismissPending = useGallery((state) => state.dismissPending)
   const remove = useGallery((state) => state.remove)
   const clear = useGallery((state) => state.clear)
   const getById = useGallery((state) => state.getById)
@@ -290,12 +348,11 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                   requestId,
                   error,
                 })
-                removePending([item.id])
-                toast.error(
-                  error instanceof Error && error.message
-                    ? error.message
-                    : 'Falló la generación del video'
-                )
+                const errorMsg = error instanceof Error && error.message
+                  ? error.message
+                  : 'Falló la generación del video'
+                markPendingFailed(item.id, errorMsg)
+                toast.error(errorMsg)
                 return
               }
 
@@ -309,7 +366,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
               const videoUrl = result.data.video?.url
 
               if (!videoUrl) {
-                removePending([item.id])
+                markPendingFailed(item.id, 'No se recibió video')
                 toast.error('No se recibió video')
                 return
               }
@@ -327,7 +384,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                 status: status.status,
                 logs: status.logs,
               })
-              removePending([item.id])
+              markPendingFailed(item.id, 'Falló la generación del video')
               toast.error('Falló la generación del video')
               return
             }
@@ -341,13 +398,13 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
           await new Promise((resolve) => window.setTimeout(resolve, 4000))
         }
 
-        removePending([item.id])
+        markPendingFailed(item.id, 'No se pudo recuperar el video en cola')
         toast.error('No se pudo recuperar el video en cola')
       })().finally(() => {
         activeVideoSyncRequests.delete(requestId)
       })
     }
-  }, [addWithPersistence, pendingItems, removePending])
+  }, [addWithPersistence, pendingItems, removePending, markPendingFailed])
 
   useEffect(() => {
     void hydrateFromR2()
@@ -640,9 +697,13 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
         ) : (
           <ScrollArea className="h-[calc(100vh-4.75rem)]">
             <div className="grid auto-rows-auto grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 p-5">
-              {pendingItems.map((item) => (
-                <PendingGalleryCard key={item.id} item={item} />
-              ))}
+              {pendingItems.map((item) =>
+                item.status === 'failed' ? (
+                  <FailedGalleryCard key={item.id} item={item} />
+                ) : (
+                  <PendingGalleryCard key={item.id} item={item} />
+                )
+              )}
               <AnimatePresence mode="popLayout">
               {sortedItems.map((item, index) => (
                 <motion.div

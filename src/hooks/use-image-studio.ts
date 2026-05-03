@@ -20,6 +20,7 @@ export interface UseImageStudioParams {
   addToGallery: (item: GeneratedMediaBase) => void
   addPending: (item: Omit<PendingMedia, 'id' | 'createdAt'>, count?: number) => string[]
   removePending: (ids: string[]) => void
+  markPendingFailed: (id: string, error: string) => void
   setLoading: (loading: boolean) => void
   openPicker: (setter: (url: string) => void, mediaType: 'image' | 'video') => void
   openMultiPicker: (setter: (urls: string[]) => void, current: string[], max: number) => void
@@ -29,6 +30,7 @@ export function useImageStudio({
   addToGallery,
   addPending,
   removePending,
+  markPendingFailed,
   setLoading,
   openPicker,
   openMultiPicker,
@@ -215,7 +217,7 @@ export function useImageStudio({
         (data.image?.url ? [data.image.url] : [])
 
       if (urls.length === 0) {
-        removePending(pendingIds)
+        pendingIds.forEach((id) => markPendingFailed(id, 'No se recibió imagen'))
         pendingIds = []
         toast.error('No se recibió imagen')
         return
@@ -262,7 +264,7 @@ export function useImageStudio({
 
       toast.success(`${urls.length} imagen(es) generada(s)`)
     } catch (error) {
-      removePending(pendingIds)
+      pendingIds.forEach((id) => markPendingFailed(id, 'Error al generar imagen'))
       pendingIds = []
       toast.error('Error al generar imagen')
       console.error(error)
