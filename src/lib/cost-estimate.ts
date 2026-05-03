@@ -45,18 +45,27 @@ function estimateImageMegapixels(imageSize?: string): number {
 
 function getSeedanceDimensions(resolution: string, aspectRatio: string): { width: number; height: number } {
   if (resolution === '1080p') {
+    if (aspectRatio === '21:9') return { width: 1920, height: 823 }
     if (aspectRatio === '9:16') return { width: 1080, height: 1920 }
+    if (aspectRatio === '3:4') return { width: 1080, height: 1440 }
+    if (aspectRatio === '4:3') return { width: 1440, height: 1080 }
     if (aspectRatio === '1:1') return { width: 1080, height: 1080 }
     return { width: 1920, height: 1080 }
   }
 
   if (resolution === '480p') {
+    if (aspectRatio === '21:9') return { width: 854, height: 366 }
     if (aspectRatio === '9:16') return { width: 480, height: 854 }
+    if (aspectRatio === '3:4') return { width: 480, height: 640 }
+    if (aspectRatio === '4:3') return { width: 640, height: 480 }
     if (aspectRatio === '1:1') return { width: 480, height: 480 }
     return { width: 854, height: 480 }
   }
 
+  if (aspectRatio === '21:9') return { width: 1280, height: 549 }
   if (aspectRatio === '9:16') return { width: 720, height: 1280 }
+  if (aspectRatio === '3:4') return { width: 720, height: 960 }
+  if (aspectRatio === '4:3') return { width: 960, height: 720 }
   if (aspectRatio === '1:1') return { width: 720, height: 720 }
   return { width: 1280, height: 720 }
 }
@@ -85,6 +94,7 @@ export function estimateImageGenerationCost(config: {
   resolution?: string
   numImages?: number
   style?: string
+  quality?: string
   enableWebSearch?: boolean
   thinkingLevel?: 'minimal' | 'high'
 }): CostEstimate | null {
@@ -127,7 +137,7 @@ export function estimateImageGenerationCost(config: {
     }
   }
 
-  if (model === 'recraft/v3') {
+  if (model === 'recraft-v3') {
     const isVectorStyle = config.style === 'vector_illustration'
     const rate = isVectorStyle ? 0.08 : 0.04
     const amount = rate * numImages
@@ -186,6 +196,27 @@ export function estimateImageGenerationCost(config: {
         (config.thinkingLevel === 'high' ? 0.002 : 0),
       details,
       note: noteParts.join(' '),
+    }
+  }
+
+  if (model === 'openai/gpt-image-2' || model === 'openai/gpt-image-2/edit') {
+    const sizeCosts: Record<string, Record<string, number>> = {
+      'square_hd': { low: 0.01, medium: 0.06, high: 0.22 },
+      'square': { low: 0.01, medium: 0.03, high: 0.10 },
+      'landscape_4_3': { low: 0.01, medium: 0.04, high: 0.15 },
+      'landscape_16_9': { low: 0.01, medium: 0.03, high: 0.12 },
+      'portrait_4_3': { low: 0.01, medium: 0.04, high: 0.15 },
+      'portrait_16_9': { low: 0.01, medium: 0.03, high: 0.12 },
+    }
+    const quality = config.quality || 'high'
+    const size = config.imageSize || 'landscape_4_3'
+    const baseCost = sizeCosts[size]?.[quality] ?? 0.15
+    const amount = baseCost * numImages
+    const modeLabel = model.endsWith('/edit') ? 'edicion' : 'generacion'
+    return {
+      amount,
+      details: `${numImages} imagen(es) x $${baseCost.toFixed(2)} (${quality}, ${size}, ${modeLabel})`,
+      note: 'Precios oficiales de fal.ai por tamano y calidad. Calidad alta por defecto.',
     }
   }
 
@@ -279,6 +310,18 @@ export function estimateVideoGenerationCost(config: {
       amount,
       details: `${seconds}s x ${resolution} x ${generateAudio ? 'audio' : 'sin audio'}`,
       note: 'Estimado con la formula oficial de video tokens de Seedance.',
+    }
+  }
+
+  if (model === 'bytedance/seedance-2.0/image-to-video') {
+    const effectiveSeconds = seconds > 0 ? seconds : 5
+    const { width, height } = getSeedanceDimensions(resolution, aspectRatio)
+    const tokens = (width * height * 24 * effectiveSeconds) / 1024
+    const amount = (tokens / 1000) * 0.014
+    return {
+      amount,
+      details: `${effectiveSeconds}s x ${resolution} (~$${(amount / effectiveSeconds).toFixed(3)}/s)`,
+      note: seconds === 0 ? 'Duración "auto" estimada como 5s.' : 'Estimado con la fórmula de tokens oficial de Seedance 2.0.',
     }
   }
 

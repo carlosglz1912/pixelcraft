@@ -16,7 +16,7 @@ import {
 import { Slider } from '@/components/ui/slider'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Loader2, Video, Upload, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { Loader2, Video, Upload, X, ChevronDown, ChevronRight, ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { enqueueVideoGeneration } from '@/lib/actions'
 import { estimateVideoGenerationCost } from '@/lib/cost-estimate'
@@ -36,11 +36,16 @@ import { CostEstimatePreview } from '@/components/cost-estimate-preview'
 import { ModelInfoTooltip } from '@/components/model-info-tooltip'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import type { KlingV3ComboElementInput, KlingV3MultiPromptElement } from '@/types/fal'
+import { GalleryPicker } from '@/components/gallery-picker'
+import type { GeneratedMedia } from '@/types'
 
 function getAspectRatioLabel(value: string): string {
   if (value === 'auto') return 'Auto'
+  if (value === '21:9') return '21:9 (Ultrawide)'
   if (value === '16:9') return '16:9 (Landscape)'
   if (value === '9:16') return '9:16 (Portrait)'
+  if (value === '4:3') return '4:3 (Classic)'
+  if (value === '3:4') return '3:4 (Portrait Classic)'
   if (value === '1:1') return '1:1 (Square)'
   return value
 }
@@ -146,6 +151,11 @@ export function ImageToVideo() {
   const [useMultiPrompt, setUseMultiPrompt] = useState(false)
   const [multiPromptShots, setMultiPromptShots] = useState<KlingMultiPromptDraft[]>([createShotDraft()])
   const [elements, setElements] = useState<KlingElementDraft[]>([])
+  
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerTarget, setPickerTarget] = useState<{ setter: (url: string) => void; mediaType: 'image' | 'video' } | null>(null)
+  const [multiPickerOpen, setMultiPickerOpen] = useState(false)
+  const [multiPickerTarget, setMultiPickerTarget] = useState<{ setter: (urls: string[]) => void; current: string[]; max: number } | null>(null)
   
   const addPending = useGallery((s) => s.addPending)
   
@@ -491,7 +501,7 @@ export function ImageToVideo() {
         },
       })
 
-      toast.success(`Video en cola (${selectedDuration ? `${selectedDuration}s` : 'duración por defecto'})`)
+      toast.success(`Video en cola (${selectedDuration === 'auto' ? 'auto' : selectedDuration ? `${selectedDuration}s` : 'duración por defecto'})`)
     } catch (error) {
       toast.error('Error al encolar video')
       console.error(error)
@@ -503,11 +513,13 @@ export function ImageToVideo() {
   function ImageUploader({ 
     value, 
     onChange, 
-    label 
+    label,
+    showGallery = true,
   }: { 
     value: string
     onChange: (url: string) => void
-    label: string 
+    label: string
+    showGallery?: boolean
   }) {
     return (
       <div className="space-y-2">
@@ -532,18 +544,35 @@ export function ImageToVideo() {
               </Button>
             </Card>
           ) : (
-            <label className="flex aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 hover:border-muted-foreground/50">
-              <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                Sube una imagen
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handleFileChange(e, onChange)}
-              />
-            </label>
+            <div className="flex gap-2">
+              <label className="flex flex-1 aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 hover:border-muted-foreground/50">
+                <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  Sube una imagen
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFileChange(e, onChange)}
+                />
+              </label>
+              {showGallery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPickerTarget({ setter: onChange, mediaType: 'image' })
+                    setPickerOpen(true)
+                  }}
+                  className="flex flex-1 aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/25 bg-primary/5 hover:border-primary/50 hover:bg-primary/10 transition"
+                >
+                  <ImageIcon className="mb-2 h-8 w-8 text-primary/60" />
+                  <span className="text-sm text-primary/80">
+                    De la galería
+                  </span>
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -576,21 +605,36 @@ export function ImageToVideo() {
               </Button>
             </Card>
           ) : (
-            <label className="flex aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 hover:border-muted-foreground/50">
-              <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                Sube un video
-              </span>
-              <span className="mt-1 text-xs text-muted-foreground">
-                720px+ y 24-60 FPS
-              </span>
-              <input
-                type="file"
-                accept="video/*"
-                className="hidden"
-                onChange={(e) => handleFileChange(e, onChange)}
-              />
-            </label>
+            <div className="flex gap-2">
+              <label className="flex flex-1 aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 hover:border-muted-foreground/50">
+                <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  Sube un video
+                </span>
+                <span className="mt-1 text-xs text-muted-foreground">
+                  720px+ y 24-60 FPS
+                </span>
+                <input
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={(e) => handleFileChange(e, onChange)}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setPickerTarget({ setter: onChange, mediaType: 'video' })
+                  setPickerOpen(true)
+                }}
+                className="flex flex-1 aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/25 bg-primary/5 hover:border-primary/50 hover:bg-primary/10 transition"
+              >
+                <ImageIcon className="mb-2 h-8 w-8 text-primary/60" />
+                <span className="text-sm text-primary/80">
+                  De la galería
+                </span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -612,30 +656,48 @@ export function ImageToVideo() {
             {value.length}/3
           </span>
         </div>
-        <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 p-4 hover:border-muted-foreground/50">
-          <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">
-            Sube 1-3 referencias
-          </span>
-          <span className="mt-1 text-xs text-muted-foreground">
-            Diferentes ángulos ayudan a fijar identidad
-          </span>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={async (e) => {
-              await handleMultiFileChange(e, (urls) => {
-                const nextUrls = [...value, ...urls].slice(0, 3)
-                if (value.length + urls.length > 3) {
-                  toast.error('Kling acepta máximo 3 referencias por elemento')
-                }
-                onChange(nextUrls)
-              })
+        <div className="flex gap-2">
+          <label className="flex flex-1 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 p-4 hover:border-muted-foreground/50">
+            <Upload className="mb-2 h-6 w-6 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              Sube 1-3 referencias
+            </span>
+            <span className="mt-1 text-xs text-muted-foreground">
+              Diferentes ángulos ayudan a fijar identidad
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={async (e) => {
+                await handleMultiFileChange(e, (urls) => {
+                  const nextUrls = [...value, ...urls].slice(0, 3)
+                  if (value.length + urls.length > 3) {
+                    toast.error('Kling acepta máximo 3 referencias por elemento')
+                  }
+                  onChange(nextUrls)
+                })
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              setMultiPickerTarget({ setter: onChange, current: value, max: 3 })
+              setMultiPickerOpen(true)
             }}
-          />
-        </label>
+            className="flex flex-1 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/25 bg-primary/5 p-4 hover:border-primary/50 hover:bg-primary/10 transition"
+          >
+            <ImageIcon className="mb-2 h-6 w-6 text-primary/60" />
+            <span className="text-sm text-primary/80">
+              De la galería
+            </span>
+            <span className="mt-1 text-xs text-primary/60">
+              Selecciona hasta {3 - value.length} más
+            </span>
+          </button>
+        </div>
         {value.length > 0 && (
           <div className="grid grid-cols-3 gap-2">
             {value.map((url, index) => (
@@ -729,6 +791,7 @@ export function ImageToVideo() {
     : prompt.trim().length > 0
 
   return (
+    <>
     <TooltipProvider>
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4">
@@ -1174,7 +1237,7 @@ export function ImageToVideo() {
                 <SelectContent>
                   {durationOptions.map((d) => (
                     <SelectItem key={d} value={d}>
-                      {d}s
+                      {d === 'auto' ? 'Auto' : `${d}s`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1476,5 +1539,31 @@ export function ImageToVideo() {
       </div>
     </div>
     </TooltipProvider>
+    <GalleryPicker
+      open={pickerOpen}
+      onOpenChange={setPickerOpen}
+      mediaType={pickerTarget?.mediaType ?? 'image'}
+      onSelect={(url) => {
+        if (pickerTarget) pickerTarget.setter(url)
+      }}
+    />
+    <GalleryPicker
+      open={multiPickerOpen}
+      onOpenChange={setMultiPickerOpen}
+      mediaType="image"
+      multiple
+      maxSelection={multiPickerTarget ? multiPickerTarget.max - multiPickerTarget.current.length : 3}
+      onSelect={(url, _item) => {
+        if (multiPickerTarget) {
+          const remaining = multiPickerTarget.max - multiPickerTarget.current.length
+          if (remaining <= 0) {
+            toast.error(`Máximo ${multiPickerTarget.max} referencias`)
+            return
+          }
+          multiPickerTarget.setter([...multiPickerTarget.current, url].slice(0, multiPickerTarget.max))
+        }
+      }}
+    />
+    </>
   )
 }

@@ -170,7 +170,7 @@ export const listByUser = query({
     
     const items = await ctx.db
       .query("media")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user_created", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(limit);
     

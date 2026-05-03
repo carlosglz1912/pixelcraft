@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,7 +17,10 @@ import {
 import { Slider } from '@/components/ui/slider'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Loader2, Sparkles, Download, Upload, X } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Loader2, Sparkles, Download, Upload, X, Check, ChevronsUpDown, ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { generateImage } from '@/lib/actions'
 import { estimateImageGenerationCost } from '@/lib/cost-estimate'
@@ -43,6 +46,7 @@ import {
 import { CostEstimatePreview } from '@/components/cost-estimate-preview'
 import { ModelInfoTooltip } from '@/components/model-info-tooltip'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { GalleryPicker } from '@/components/gallery-picker'
 
 const RECRAFT_STYLES = [
   { value: 'realistic_image', label: 'Realistic' },
@@ -59,10 +63,20 @@ function getImageStepSettings(model: string) {
   return { min: 1, max: 50, defaultValue: 20 }
 }
 
+function getModelSupports(modelId: string) {
+  return getImageModelConfig(modelId)?.supports ?? []
+}
+
+interface GenerationResult {
+  url: string
+  modelId: string
+  modelName: string
+}
+
 export function TextToImage() {
   const [prompt, setPrompt] = useState('')
   const [negativePrompt, setNegativePrompt] = useState('')
-  const [model, setModel] = useState('flux/schnell')
+  const [selectedModels, setSelectedModels] = useState<string[]>(['flux/schnell'])
   const [imageSize, setImageSize] = useState(() => getDefaultImageSize('flux/schnell'))
   const [imageAspectRatio, setImageAspectRatio] = useState(() => getDefaultImageAspectRatio('flux/schnell'))
   const [imageResolution, setImageResolution] = useState(() => getDefaultImageResolution('flux/schnell'))
@@ -74,17 +88,22 @@ export function TextToImage() {
   const [guidanceScale, setGuidanceScale] = useState(5)
   const [numInferenceSteps, setNumInferenceSteps] = useState(20)
   const [referenceImage, setReferenceImage] = useState('')
+  const [referenceImages, setReferenceImages] = useState<string[]>([])
   const [imagePromptStrength, setImagePromptStrength] = useState(0.2)
   const [imageStyle, setImageStyle] = useState('realistic_image')
   const [imageColors, setImageColors] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState<string[]>([])
+  const [inflightCount, setInflightCount] = useState(0)
+  const [results, setResults] = useState<GenerationResult[]>([])
+  const [modelPickerOpen, setModelPickerOpen] = useState(false)
+  const [galleryPickerOpen, setGalleryPickerOpen] = useState(false)
+  const [galleryMultiPickerOpen, setGalleryMultiPickerOpen] = useState(false)
   
   const addToGallery = useGallery((s) => s.addWithPersistence)
   const addPending = useGallery((s) => s.addPending)
   const removePending = useGallery((s) => s.removePending)
 
-  const modelConfig = getImageModelConfig(model)
+  const primaryModel = selectedModels[0] ?? 'flux/schnell'
+  const modelConfig = getImageModelConfig(primaryModel)
   const supports = modelConfig?.supports ?? []
   
   const supportsNegative = supports.includes('negative_prompt')
@@ -98,22 +117,22 @@ export function TextToImage() {
   const supportsGuidance = supports.includes('guidance_scale')
   const supportsSteps = supports.includes('num_inference_steps')
   const supportsSeed = supports.includes('seed')
-  const supportsReference = supports.includes('reference_image')
+  const supportsReference = supports.includes('reference_image') || supports.includes('reference_images')
+  const supportsMultiReference = supports.includes('reference_images')
   const supportsImagePromptStrength = supports.includes('image_prompt_strength')
   const supportsStyle = supports.includes('style')
   const supportsColors = supports.includes('colors')
-  const imageSizeOptions = getImageSizeOptions(model)
-  const imageAspectRatioOptions = getImageAspectRatioOptions(model)
-  const imageResolutionOptions = getImageResolutionOptions(model)
-  const stepSettings = getImageStepSettings(model)
-  const previewSkeletonCount = supportsNumImages ? numImages : 1
-  const previewGridColumns = previewSkeletonCount === 1 ? '1fr' : 'repeat(2, 1fr)'
+  const imageSizeOptions = getImageSizeOptions(primaryModel)
+  const imageAspectRatioOptions = getImageAspectRatioOptions(primaryModel)
+  const imageResolutionOptions = getImageResolutionOptions(primaryModel)
+  const stepSettings = getImageStepSettings(primaryModel)
   const costEstimate = estimateImageGenerationCost({
-    model,
+    model: primaryModel,
     imageSize: supportsSize ? imageSize : undefined,
     resolution: supportsResolution ? imageResolution : undefined,
     numImages: supportsNumImages ? numImages : 1,
     style: supportsStyle ? imageStyle : undefined,
+    quality: supportsQuality ? imageQuality : undefined,
   })
 
   useEffect(() => {
@@ -123,25 +142,40 @@ export function TextToImage() {
     }
 
     setNumInferenceSteps(stepSettings.defaultValue)
-  }, [model, numInferenceSteps, stepSettings.defaultValue, stepSettings.max, stepSettings.min, supportsSteps])
+  }, [primaryModel, numInferenceSteps, stepSettings.defaultValue, stepSettings.max, stepSettings.min, supportsSteps])
 
   useEffect(() => {
     if (!supportsSize) return
     if (imageSizeOptions.some((option) => option.value === imageSize)) return
-    setImageSize(getDefaultImageSize(model))
-  }, [imageSize, imageSizeOptions, model, supportsSize])
+    setImageSize(getDefaultImageSize(primaryModel))
+  }, [imageSize, imageSizeOptions, primaryModel, supportsSize])
 
   useEffect(() => {
     if (!supportsAspectRatio) return
     if (imageAspectRatioOptions.some((option) => option.value === imageAspectRatio)) return
-    setImageAspectRatio(getDefaultImageAspectRatio(model))
-  }, [imageAspectRatio, imageAspectRatioOptions, model, supportsAspectRatio])
+    setImageAspectRatio(getDefaultImageAspectRatio(primaryModel))
+  }, [imageAspectRatio, imageAspectRatioOptions, primaryModel, supportsAspectRatio])
 
   useEffect(() => {
     if (!supportsResolution) return
     if (imageResolutionOptions.some((option) => option.value === imageResolution)) return
-    setImageResolution(getDefaultImageResolution(model))
-  }, [imageResolution, imageResolutionOptions, model, supportsResolution])
+    setImageResolution(getDefaultImageResolution(primaryModel))
+  }, [imageResolution, imageResolutionOptions, primaryModel, supportsResolution])
+
+  useEffect(() => {
+    if (selectedModels.length > 0) return
+    setSelectedModels(['flux/schnell'])
+  }, [selectedModels.length])
+
+  const toggleModel = useCallback((modelId: string) => {
+    setSelectedModels((prev) => {
+      if (prev.includes(modelId)) {
+        const next = prev.filter((m) => m !== modelId)
+        return next.length > 0 ? next : prev
+      }
+      return [...prev, modelId]
+    })
+  }, [])
 
   async function handleDownloadResult(url: string, index: number) {
     try {
@@ -150,7 +184,7 @@ export function TextToImage() {
         createDownloadStem({
           type: 'image',
           prompt,
-          model,
+          model: results[index]?.modelId ?? primaryModel,
           fallback: `generated-image-${index + 1}`,
           index,
         })
@@ -162,66 +196,98 @@ export function TextToImage() {
   }
 
   async function handleReferenceFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      setReferenceImage(reader.result as string)
+    if (supportsMultiReference) {
+      const maxRefs = 14
+      const remaining = maxRefs - referenceImages.length
+      if (remaining <= 0) return
+      const urls = await Promise.all(
+        files.slice(0, remaining).map(async (f) => {
+          const reader = new FileReader()
+          return new Promise<string>((resolve) => {
+            reader.onload = () => resolve(reader.result as string)
+            reader.readAsDataURL(f)
+          })
+        })
+      )
+      setReferenceImages((prev) => [...prev, ...urls].slice(0, maxRefs))
+    } else {
+      const file = files[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        setReferenceImage(reader.result as string)
+      }
+      reader.readAsDataURL(file)
     }
-    reader.readAsDataURL(file)
+    e.target.value = ''
   }
 
-  async function handleGenerate() {
-    if (!prompt.trim()) {
-      toast.error('Ingresa un prompt')
-      return
+  function buildModelInput(modelId: string) {
+    const s = getModelSupports(modelId)
+    const ms = getImageStepSettings(modelId)
+
+    return {
+      prompt,
+      model: `fal-ai/${modelId}`,
+      negativePrompt: s.includes('negative_prompt') ? (negativePrompt || undefined) : undefined,
+      imageSize: s.includes('image_size') ? imageSize : undefined,
+      aspectRatio: s.includes('aspect_ratio') ? imageAspectRatio : undefined,
+      resolution: s.includes('resolution') ? imageResolution : undefined,
+      seed: s.includes('seed') ? seed : undefined,
+      numImages: s.includes('num_images') ? numImages : 1,
+      outputFormat: s.includes('output_format') ? imageOutputFormat : undefined,
+      quality: s.includes('quality') ? imageQuality : undefined,
+      background: s.includes('background') ? imageBackground : undefined,
+      guidanceScale: s.includes('guidance_scale') ? guidanceScale : undefined,
+      numInferenceSteps: s.includes('num_inference_steps')
+        ? Math.min(Math.max(numInferenceSteps, ms.min), ms.max)
+        : undefined,
+      imageUrl: s.includes('reference_image') ? (referenceImage || undefined) : undefined,
+      imageUrlsJson: s.includes('reference_images') && referenceImages.length > 0 ? JSON.stringify(referenceImages) : undefined,
+      imagePromptStrength: s.includes('image_prompt_strength') ? imagePromptStrength : undefined,
+      style: s.includes('style') ? imageStyle : undefined,
+      colors: s.includes('colors')
+        ? imageColors.split(',').map((c) => c.trim()).filter(Boolean)
+        : undefined,
     }
+  }
+
+  async function runSingleModel(modelId: string) {
+    const config = getImageModelConfig(modelId)
+    const s = getModelSupports(modelId)
+    const skeletonCount = s.includes('num_images') ? numImages : 1
+    const ms = getImageStepSettings(modelId)
+
+    const costEst = estimateImageGenerationCost({
+      model: modelId,
+      imageSize: s.includes('image_size') ? imageSize : undefined,
+      resolution: s.includes('resolution') ? imageResolution : undefined,
+      numImages: s.includes('num_images') ? numImages : 1,
+      style: s.includes('style') ? imageStyle : undefined,
+      quality: s.includes('quality') ? imageQuality : undefined,
+    })
 
     let pendingIds = addPending(
       {
         type: 'image',
         prompt,
-        model: `fal-ai/${model}`,
-        costTier: modelConfig?.costTier,
+        model: `fal-ai/${modelId}`,
+        costTier: config?.costTier,
         metadata: {
-          imageSize: supportsSize ? imageSize : undefined,
-          aspectRatio: supportsAspectRatio ? imageAspectRatio : undefined,
+          imageSize: s.includes('image_size') ? imageSize : undefined,
+          aspectRatio: s.includes('aspect_ratio') ? imageAspectRatio : undefined,
         },
       },
-      previewSkeletonCount
+      skeletonCount
     )
 
-    setLoading(true)
-    setResults([])
+    setInflightCount((c) => c + 1)
 
     try {
-      const data = await generateImage({
-        prompt,
-        model: `fal-ai/${model}`,
-        negativePrompt: supportsNegative ? (negativePrompt || undefined) : undefined,
-        imageSize: supportsSize ? imageSize : undefined,
-        aspectRatio: supportsAspectRatio ? imageAspectRatio : undefined,
-        resolution: supportsResolution ? imageResolution : undefined,
-        seed: supportsSeed ? seed : undefined,
-        numImages: supportsNumImages ? numImages : 1,
-        outputFormat: supportsOutputFormat ? imageOutputFormat : undefined,
-        quality: supportsQuality ? imageQuality : undefined,
-        background: supportsBackground ? imageBackground : undefined,
-        guidanceScale: supportsGuidance ? guidanceScale : undefined,
-        numInferenceSteps: supportsSteps
-          ? Math.min(Math.max(numInferenceSteps, stepSettings.min), stepSettings.max)
-          : undefined,
-        imageUrl: supportsReference ? (referenceImage || undefined) : undefined,
-        imagePromptStrength: supportsImagePromptStrength ? imagePromptStrength : undefined,
-        style: supportsStyle ? imageStyle : undefined,
-        colors: supportsColors
-          ? imageColors
-              .split(',')
-              .map((color) => color.trim())
-              .filter(Boolean)
-          : undefined,
-      })
+      const data = await generateImage(buildModelInput(modelId))
 
       const urls = data.images?.map(img => img.url).filter(Boolean) || 
                    (data.image?.url ? [data.image.url] : [])
@@ -235,54 +301,78 @@ export function TextToImage() {
             type: 'image',
             url,
             prompt,
-            model: `fal-ai/${model}`,
-            costTier: modelConfig?.costTier,
+            model: `fal-ai/${modelId}`,
+            costTier: config?.costTier,
             metadata: {
-              imageSize: supportsSize ? imageSize : undefined,
-              aspectRatio: supportsAspectRatio ? imageAspectRatio : undefined,
-              imageAspectRatio: supportsAspectRatio ? imageAspectRatio : undefined,
-              imageResolution: supportsResolution ? imageResolution : undefined,
-              imageQuality: supportsQuality ? imageQuality : undefined,
-              imageBackground: supportsBackground ? imageBackground : undefined,
-              outputFormat: supportsOutputFormat ? imageOutputFormat : undefined,
-              estimatedCost: costEstimate?.amount,
-              seed: supportsSeed ? seed : undefined,
-              guidanceScale: supportsGuidance ? guidanceScale : undefined,
-              numInferenceSteps: supportsSteps ? numInferenceSteps : undefined,
-              imageStyle: supportsStyle ? imageStyle : undefined,
-              imageColors: supportsColors
-                ? imageColors
-                    .split(',')
-                    .map((color) => color.trim())
-                    .filter(Boolean)
+              imageSize: s.includes('image_size') ? imageSize : undefined,
+              aspectRatio: s.includes('aspect_ratio') ? imageAspectRatio : undefined,
+              imageAspectRatio: s.includes('aspect_ratio') ? imageAspectRatio : undefined,
+              imageResolution: s.includes('resolution') ? imageResolution : undefined,
+              imageQuality: s.includes('quality') ? imageQuality : undefined,
+              imageBackground: s.includes('background') ? imageBackground : undefined,
+              outputFormat: s.includes('output_format') ? imageOutputFormat : undefined,
+              estimatedCost: costEst?.amount,
+              seed: s.includes('seed') ? seed : undefined,
+              guidanceScale: s.includes('guidance_scale') ? guidanceScale : undefined,
+              numInferenceSteps: s.includes('num_inference_steps') ? numInferenceSteps : undefined,
+              imageStyle: s.includes('style') ? imageStyle : undefined,
+              imageColors: s.includes('colors')
+                ? imageColors.split(',').map((c) => c.trim()).filter(Boolean)
                 : undefined,
-              imagePromptStrength: supportsImagePromptStrength ? imagePromptStrength : undefined,
-              costTier: modelConfig?.costTier,
+              imagePromptStrength: s.includes('image_prompt_strength') ? imagePromptStrength : undefined,
+              costTier: config?.costTier,
             },
           }
           void addToGallery(item)
         })
-        setResults(urls)
-        toast.success(`${urls.length} imagen(es) generada(s)`)
+
+        setResults((prev) => [
+          ...urls.map((url) => ({
+            url,
+            modelId,
+            modelName: config?.name ?? modelId,
+          })),
+          ...prev,
+        ])
       } else {
         removePending(pendingIds)
         pendingIds = []
-        toast.error('No se recibió imagen')
+        toast.error(`${config?.name ?? modelId}: sin imagen`)
       }
     } catch (error) {
       removePending(pendingIds)
       pendingIds = []
-      toast.error('Error al generar imagen')
+      toast.error(`Error en ${config?.name ?? modelId}`)
       console.error(error)
     } finally {
       if (pendingIds.length > 0) {
         removePending(pendingIds)
       }
-      setLoading(false)
+      setInflightCount((c) => c - 1)
     }
   }
 
+  async function handleGenerate() {
+    if (!prompt.trim()) {
+      toast.error('Ingresa un prompt')
+      return
+    }
+
+    const models = selectedModels.length > 0 ? selectedModels : [primaryModel]
+
+    void Promise.allSettled(models.map(runSingleModel))
+
+    toast.success(`Generando con ${models.length} modelo(s)`)
+  }
+
+  const previewGridColumns = results.length === 1
+    ? '1fr'
+    : results.length <= 4
+      ? 'repeat(2, 1fr)'
+      : 'repeat(3, 1fr)'
+
   return (
+    <>
     <TooltipProvider>
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4">
@@ -308,7 +398,7 @@ export function TextToImage() {
           </div>
         )}
 
-        {supportsReference && (
+        {supportsReference && !supportsMultiReference && (
           <div className="space-y-2">
             <Label>Imagen de referencia</Label>
             {referenceImage ? (
@@ -330,16 +420,81 @@ export function TextToImage() {
                 </Button>
               </Card>
             ) : (
-              <label className="flex aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 hover:border-muted-foreground/50">
-                <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Sube una imagen</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleReferenceFileChange}
-                />
-              </label>
+              <div className="flex gap-2">
+                <label className="flex flex-1 aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 hover:border-muted-foreground/50">
+                  <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Sube una imagen</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleReferenceFileChange}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setGalleryPickerOpen(true)}
+                  className="flex flex-1 aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/25 bg-primary/5 hover:border-primary/50 hover:bg-primary/10 transition"
+                >
+                  <ImageIcon className="mb-2 h-8 w-8 text-primary/60" />
+                  <span className="text-sm text-primary/80">De la galería</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {supportsMultiReference && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Imagenes de referencia</Label>
+              <Badge variant="secondary" className="text-xs">
+                {referenceImages.length}/14
+              </Badge>
+            </div>
+            {referenceImages.length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                {referenceImages.map((img, i) => (
+                  <div key={i} className="relative h-16 w-16 rounded-lg overflow-hidden border border-muted">
+                    <Image src={img} alt={`Ref ${i + 1}`} fill className="object-cover" unoptimized />
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="absolute -right-1 -top-1 h-5 w-5 rounded-full"
+                      onClick={() => setReferenceImages((prev) => prev.filter((_, idx) => idx !== i))}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {referenceImages.length < 14 && (
+              <div className="flex gap-2">
+                <label className="flex flex-1 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 p-4 hover:border-muted-foreground/50">
+                  <Upload className="mb-1 h-6 w-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    Agregar{referenceImages.length > 0 ? ' mas' : ''} ({14 - referenceImages.length} restantes)
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleReferenceFileChange}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setGalleryMultiPickerOpen(true)}
+                  className="flex flex-1 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/25 bg-primary/5 p-4 hover:border-primary/50 hover:bg-primary/10 transition"
+                >
+                  <ImageIcon className="mb-1 h-6 w-6 text-primary/60" />
+                  <span className="text-xs text-primary/80">
+                    De la galería
+                  </span>
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -390,37 +545,99 @@ export function TextToImage() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Modelo</Label>
+              <Label>Modelo{selectedModels.length > 1 ? ` (${selectedModels.length})` : ''}</Label>
               <ModelInfoTooltip 
                 info={modelConfig?.info} 
                 costTier={modelConfig?.costTier} 
-                modelName={modelConfig?.name || model}
+                modelName={modelConfig?.name || primaryModel}
               />
             </div>
-            <Select value={model} onValueChange={setModel}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(IMAGE_MODEL_FAMILIES).map(([familyId, family]) => (
-                  <SelectGroup key={familyId}>
-                    <SelectLabel>{family.name}</SelectLabel>
-                    {Object.entries(family.models).map(([modelId, config]) => (
-                      <SelectItem key={modelId} value={modelId}>
-                        <div className="flex w-full items-center justify-between gap-3">
-                          <span>{config.name}</span>
-                          {getCostTierLabel(config.costTier) && (
-                            <span className="text-xs text-muted-foreground">
-                              {getCostTierLabel(config.costTier)}
-                            </span>
-                          )}
+            <Popover open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-between font-normal">
+                  <span className="truncate">
+                    {selectedModels.length === 1
+                      ? modelConfig?.name ?? primaryModel
+                      : `${selectedModels.length} modelos`}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[320px] p-0" align="start">
+                <div className="border-b px-3 py-2">
+                  <p className="text-xs text-muted-foreground">
+                    Selecciona modelos para comparar. Los controles usan el primero.
+                  </p>
+                </div>
+                <ScrollArea className="h-[300px]">
+                  <div className="p-2">
+                    {Object.entries(IMAGE_MODEL_FAMILIES).map(([familyId, family]) => (
+                      <div key={familyId} className="mb-1">
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                          {family.name}
                         </div>
-                      </SelectItem>
+                        {Object.entries(family.models).map(([modelId, config]) => {
+                          const isSelected = selectedModels.includes(modelId)
+                          const isPrimary = selectedModels[0] === modelId
+                          return (
+                            <button
+                              key={modelId}
+                              type="button"
+                              onClick={() => toggleModel(modelId)}
+                              className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent ${
+                                isSelected ? 'bg-accent/50' : ''
+                              }`}
+                            >
+                              <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                                isSelected
+                                  ? 'border-primary bg-primary text-primary-foreground'
+                                  : 'border-muted-foreground/30'
+                              }`}>
+                                {isSelected && <Check className="h-3 w-3" />}
+                              </div>
+                              <span className="flex-1 text-left">{config.name}</span>
+                              <div className="flex items-center gap-1.5">
+                                {isPrimary && (
+                                  <Badge variant="secondary" className="text-[0.6rem] px-1 py-0">
+                                    primario
+                                  </Badge>
+                                )}
+                                {getCostTierLabel(config.costTier) && (
+                                  <span className="text-[0.65rem] text-muted-foreground">
+                                    {getCostTierLabel(config.costTier)}
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
                     ))}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
+                  </div>
+                </ScrollArea>
+                {selectedModels.length > 1 && (
+                  <div className="border-t px-3 py-2">
+                    <div className="flex flex-wrap gap-1">
+                      {selectedModels.map((id) => {
+                        const c = getImageModelConfig(id)
+                        return (
+                          <Badge key={id} variant="secondary" className="text-[0.65rem]">
+                            {c?.name ?? id}
+                            <button
+                              type="button"
+                              onClick={() => toggleModel(id)}
+                              className="ml-0.5 rounded-full hover:bg-foreground/10"
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          </Badge>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
           </div>
 
           {supportsSize && (
@@ -597,59 +814,56 @@ export function TextToImage() {
 
         <Button
           onClick={handleGenerate}
-          disabled={loading || !prompt.trim()}
+          disabled={!prompt.trim()}
           className="w-full"
         >
-          {loading ? (
+          {inflightCount > 0 ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generando...
+              {inflightCount} en curso... Generar más
             </>
           ) : (
             <>
               <Sparkles className="mr-2 h-4 w-4" />
-              Generar Imagen
+              Generar{selectedModels.length > 1 ? ` (${selectedModels.length} modelos)` : ''}
             </>
           )}
         </Button>
       </div>
 
       <div className="flex items-center justify-center">
-        <Card className="relative aspect-square w-full max-w-md overflow-hidden bg-muted/50">
-          {loading ? (
-            <>
-              <div
-                className="grid h-full w-full gap-1 p-1"
-                style={{ gridTemplateColumns: previewGridColumns }}
-              >
-                {Array.from({ length: previewSkeletonCount }).map((_, index) => (
-                  <Skeleton key={index} className="h-full w-full rounded-sm" />
-                ))}
-              </div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/45">
-                <Loader2 className="h-8 w-8 animate-spin text-foreground" />
-                <p className="text-sm font-medium text-foreground">Generando imagen...</p>
-              </div>
-            </>
+        <Card className="relative w-full max-w-md overflow-hidden bg-muted/50" style={{ minHeight: 400 }}>
+          {inflightCount > 0 && results.length === 0 ? (
+            <div className="flex h-full min-h-[400px] flex-col items-center justify-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-foreground" />
+              <p className="text-sm font-medium text-foreground">
+                Generando con {inflightCount} modelo(s)...
+              </p>
+            </div>
           ) : results.length > 0 ? (
             <div className="grid h-full w-full gap-1 p-1" style={{
-              gridTemplateColumns: results.length === 1 ? '1fr' : results.length <= 2 ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)'
+              gridTemplateColumns: previewGridColumns,
             }}>
-              {results.map((url, i) => (
-                <div key={i} className="relative h-full">
+              {results.map((result, i) => (
+                <div key={`${result.url}-${i}`} className="relative aspect-square">
                   <Image
-                    src={url}
-                    alt={`Generated ${i + 1}`}
+                    src={result.url}
+                    alt={`${result.modelName} ${i + 1}`}
                     fill
-                    className="object-contain"
-                    loading="eager"
+                    className="object-contain rounded-sm"
+                    loading="lazy"
                     unoptimized
                   />
+                  <div className="absolute bottom-1 left-1 flex items-center gap-1">
+                    <Badge variant="secondary" className="text-[0.55rem] px-1 py-0 backdrop-blur-sm bg-background/70">
+                      {result.modelName}
+                    </Badge>
+                  </div>
                   <Button
                     size="icon"
                     variant="secondary"
                     className="absolute right-1 top-1 h-6 w-6"
-                    onClick={() => void handleDownloadResult(url, i)}
+                    onClick={() => void handleDownloadResult(result.url, i)}
                   >
                     <Download className="h-3 w-3" />
                   </Button>
@@ -657,7 +871,7 @@ export function TextToImage() {
               ))}
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center text-muted-foreground">
+            <div className="flex h-full min-h-[400px] items-center justify-center text-muted-foreground">
               <Sparkles className="h-12 w-12 opacity-50" />
             </div>
           )}
@@ -665,5 +879,22 @@ export function TextToImage() {
       </div>
     </div>
     </TooltipProvider>
+    <GalleryPicker
+      open={galleryPickerOpen}
+      onOpenChange={setGalleryPickerOpen}
+      mediaType="image"
+      onSelect={(url) => setReferenceImage(url)}
+    />
+    <GalleryPicker
+      open={galleryMultiPickerOpen}
+      onOpenChange={setGalleryMultiPickerOpen}
+      mediaType="image"
+      multiple
+      maxSelection={14 - referenceImages.length}
+      onSelect={(url) => {
+        setReferenceImages((prev) => [...prev, url].slice(0, 14))
+      }}
+    />
+    </>
   )
 }

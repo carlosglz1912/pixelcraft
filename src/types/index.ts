@@ -139,6 +139,7 @@ export interface ModelInfo {
   description: string
   tips?: string[]
   bestFor?: string[]
+  warnings?: string[]
 }
 
 export interface ImageModelConfig {
@@ -406,6 +407,7 @@ export interface VideoModelConfig {
   name: string
   supports: readonly VideoModelSupport[]
   textToVideoModel?: string
+  falEndpoint?: string
   info?: ModelInfo
   costTier?: CostTier
 }
@@ -527,6 +529,25 @@ export const VIDEO_MODEL_FAMILIES: Record<string, VideoModelFamily> = {
             'End frame para transiciones'
           ],
           bestFor: ['Contenido profesional', 'Control fino', 'Calidad']
+        }
+      },
+      'bytedance/seedance-2.0/image-to-video': { 
+        name: 'Seedance 2.0', 
+        supports: ['duration', 'aspect_ratio', 'resolution', 'end_image', 'audio', 'seed'] as const,
+        falEndpoint: 'bytedance/seedance-2.0/image-to-video',
+        costTier: 'premium',
+        info: {
+          description: 'El modelo más avanzado de ByteDance para image-to-video. Video cinematográfico con audio sincronizado, control de start/end frame y motion prompts.',
+          tips: [
+            'Hasta 15s de duración',
+            'Audio sincronizado con lip-sync',
+            'Control de start y end frame',
+            'Resolución 480p-1080p',
+            'Soporta "auto" para duración y aspecto',
+            'NO funciona bien con fotos de personas como referencia'
+          ],
+          bestFor: ['Video cinematográfico', 'Audio sincronizado', 'Lip-sync', 'Control de frames'],
+          warnings: ['Este modelo no funciona bien con imágenes de personas como referencia. Usa paisajes, objetos o escenas sin rostros para mejores resultados.']
         }
       },
     },
@@ -655,7 +676,7 @@ export function getVideoEffectiveSupports(
 ): readonly VideoModelSupport[] {
   if (modelId === 'kling-video/v3/pro/image-to-video') {
     return mode === 'image-to-video'
-      ? (['duration', 'cfg_scale', 'negative_prompt', 'end_image', 'audio', 'multi_prompt', 'elements'] as const)
+      ? (['duration', 'cfg_scale', 'negative_prompt', 'end_image', 'aspect_ratio', 'audio', 'multi_prompt', 'elements'] as const)
       : (['duration', 'cfg_scale', 'negative_prompt', 'aspect_ratio', 'audio', 'multi_prompt'] as const)
   }
 
@@ -670,6 +691,7 @@ export function getVideoEffectiveSupports(
 
 const VIDEO_DURATIONS_KLING = ['3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'] as const
 const VIDEO_DURATIONS_SEEDANCE = ['4', '5', '6', '7', '8', '9', '10', '11', '12'] as const
+const VIDEO_DURATIONS_SEEDANCE_2 = ['auto', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'] as const
 const VIDEO_DURATIONS_VEO = ['4', '6', '8'] as const
 const VIDEO_DURATIONS_SORA = ['4', '8', '12'] as const
 const VIDEO_DURATIONS_NONE = [] as const
@@ -680,6 +702,7 @@ export function canGenerateVideoFromPromptOnly(modelId: string): boolean {
 
 export function getVideoDurations(modelId: string): readonly string[] {
   if (modelId.includes('kling')) return VIDEO_DURATIONS_KLING
+  if (modelId.includes('seedance-2.0')) return VIDEO_DURATIONS_SEEDANCE_2
   if (modelId.includes('seedance')) return VIDEO_DURATIONS_SEEDANCE
   if (modelId.includes('veo')) return VIDEO_DURATIONS_VEO
   if (modelId.includes('sora')) return VIDEO_DURATIONS_SORA
@@ -689,11 +712,15 @@ export function getVideoDurations(modelId: string): readonly string[] {
 const VIDEO_ASPECT_RATIOS_DEFAULT = ['16:9', '9:16', '1:1'] as const
 const VIDEO_ASPECT_RATIOS_AUTO_WIDE = ['auto', '16:9', '9:16'] as const
 const VIDEO_ASPECT_RATIOS_AUTO_DEFAULT = ['auto', '16:9', '9:16', '1:1'] as const
+const VIDEO_ASPECT_RATIOS_SEEDANCE_2 = ['auto', '21:9', '16:9', '4:3', '1:1', '3:4', '9:16'] as const
 
 export function getVideoAspectRatios(
   modelId: string,
   mode: VideoGenerationMode
 ): readonly string[] {
+  if (modelId.includes('seedance-2.0')) {
+    return VIDEO_ASPECT_RATIOS_SEEDANCE_2
+  }
   if (modelId.includes('veo')) {
     return mode === 'image-to-video' ? VIDEO_ASPECT_RATIOS_AUTO_WIDE : ['16:9', '9:16']
   }

@@ -1,7 +1,7 @@
 'use server'
 
 import { fal } from '@fal-ai/client'
-import { getVideoEndpoint, type VideoGenerationMode } from '@/types'
+import { getVideoEndpoint, getVideoModelConfig, type VideoGenerationMode } from '@/types'
 import type { 
   FalImageOutput, 
   FalVideoOutput,
@@ -100,11 +100,14 @@ function resolveVideoModel(config: Pick<VideoGenerationConfig, 'model' | 'mode'>
     throw new Error(`Unsupported video model: ${requestedModel}`)
   }
 
+  const modelConfig = getVideoModelConfig(requestedModel)
+  const endpoint = modelConfig?.falEndpoint || `fal-ai/${resolvedModel}`
+
   return {
     requestedModel,
     mode,
     resolvedModel,
-    endpoint: `fal-ai/${resolvedModel}`,
+    endpoint,
   }
 }
 
@@ -157,6 +160,7 @@ function buildVideoInput(config: VideoGenerationConfig, endpoint: string) {
   if (endpoint === 'fal-ai/kling-video/v3/pro/image-to-video') {
     if (config.imageUrl) input.start_image_url = config.imageUrl
     if (!usesMultiPrompt && config.duration) input.duration = config.duration
+    if (config.aspectRatio) input.aspect_ratio = config.aspectRatio
     if (config.generateAudio !== undefined) input.generate_audio = config.generateAudio
     if (config.endImageUrl) input.end_image_url = config.endImageUrl
     if (config.negativePrompt) input.negative_prompt = config.negativePrompt
@@ -189,6 +193,7 @@ function buildVideoInput(config: VideoGenerationConfig, endpoint: string) {
     if (config.resolution) input.resolution = config.resolution
     if (config.generateAudio !== undefined) input.generate_audio = config.generateAudio
     if (config.endImageUrl) input.end_image_url = config.endImageUrl
+    if (config.seed !== undefined) input.seed = config.seed
   } else if (endpoint.includes('veo3.1')) {
     if (prompt) input.prompt = prompt
     if (config.imageUrl) input.image_url = config.imageUrl

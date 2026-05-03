@@ -23,5 +23,6 @@ export default defineSchema({
     createdAt: v.number(),
     userId: v.optional(v.string()),
   }).index("by_created", ["createdAt"])
-    .index("by_user", ["userId"]),
+    .index("by_user", ["userId"])
+    .index("by_user_created", ["userId", "createdAt"]),
 });

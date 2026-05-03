@@ -313,7 +313,7 @@ export async function persistMedia(options: PersistMediaOptions): Promise<Persis
   }
 }
 
-export async function listPersistedMedia(limit = 50) {
+export async function listPersistedMedia(limit = 50, userId?: string) {
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
   
   if (!convexUrl) {
@@ -322,9 +322,16 @@ export async function listPersistedMedia(limit = 50) {
 
   try {
     const convexSiteUrl = convexUrl.replace('.cloud', '.site')
-    const response = await fetch(`${convexSiteUrl}/api/media/list?limit=${limit}`)
+    const params = new URLSearchParams()
+    params.set('limit', String(limit))
+    if (userId) params.set('userId', userId)
+    const response = await fetch(`${convexSiteUrl}/api/media/list?${params}`)
     
     if (!response.ok) {
+      if (response.status === 404) {
+        console.warn('[persistence] /api/media/list route not found. Run `bunx convex dev` to deploy.')
+        return []
+      }
       throw new Error(`Failed to list media: ${response.status}`)
     }
 

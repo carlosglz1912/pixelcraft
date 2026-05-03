@@ -8,6 +8,7 @@ import {
   Clapperboard,
   Cloud,
   Database,
+  Image as ImageIcon,
   ImagePlus,
   Music,
   Sparkles,
@@ -62,6 +63,7 @@ import {
 } from '@/types'
 import { CostEstimatePreview } from '@/components/cost-estimate-preview'
 import { Gallery } from '@/components/features/gallery'
+import { GalleryPicker } from '@/components/gallery-picker'
 import { R2Manager } from '@/components/features/r2-manager'
 import type { KlingV3ComboElementInput, KlingV3MultiPromptElement } from '@/types/fal'
 
@@ -292,6 +294,11 @@ export function AppTabs() {
   const [videoElements, setVideoElements] = useState<KlingElementDraft[]>([])
 
   const [loading, setLoading] = useState(false)
+
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerTarget, setPickerTarget] = useState<{ setter: (url: string) => void; mediaType: 'image' | 'video' } | null>(null)
+  const [multiPickerOpen, setMultiPickerOpen] = useState(false)
+  const [multiPickerTarget, setMultiPickerTarget] = useState<{ setter: (urls: string[]) => void; current: string[]; max: number } | null>(null)
 
   const addToGallery = useGallery((state) => state.addWithPersistence)
   const addPending = useGallery((state) => state.addPending)
@@ -934,6 +941,7 @@ export function AppTabs() {
         : (loading ? 'Generando...' : 'Renderizar Video')
 
   return (
+    <>
     <div className={`grid min-h-screen ${layoutClass}`}>
       <aside className="depth-secondary relative h-screen border-r border-secondary/30 bg-slate-950/96">
         <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-secondary/0 via-secondary/80 to-secondary/0" />
@@ -1085,17 +1093,34 @@ export function AppTabs() {
                             </Badge>
                           </div>
 
-                          <label className="depth-secondary flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-secondary/25 bg-slate-950/75 px-4 py-4 text-sm text-slate-300">
-                            <ImagePlus className="h-4 w-4 text-secondary-tint" />
-                            {supportsImageReferences ? 'Add references' : 'Add reference'}
-                            <input
-                              type="file"
-                              accept="image/*"
-                              multiple={supportsImageReferences}
-                              className="hidden"
-                              onChange={handleReferenceFileChange}
-                            />
-                          </label>
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            <label className="depth-secondary flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-secondary/25 bg-slate-950/75 px-4 py-4 text-sm text-slate-300">
+                              <ImagePlus className="h-4 w-4 text-secondary-tint" />
+                              {supportsImageReferences ? 'Add references' : 'Add reference'}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple={supportsImageReferences}
+                                className="hidden"
+                                onChange={handleReferenceFileChange}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMultiPickerTarget({
+                                  setter: (urls) => setReferenceImages((current) => [...current, ...urls].slice(0, maxImageReferences)),
+                                  current: referenceImages,
+                                  max: maxImageReferences,
+                                })
+                                setMultiPickerOpen(true)
+                              }}
+                              className="depth-secondary flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/25 bg-primary/5 px-4 py-4 text-sm text-primary/80 transition hover:border-primary/50 hover:bg-primary/10"
+                            >
+                              <ImageIcon className="h-4 w-4 text-primary/60" />
+                              De la galería
+                            </button>
+                          </div>
 
                           {referenceImages.length > 0 ? (
                             <div className={`mt-3 ${supportsImageReferences ? 'grid grid-cols-3 gap-2' : ''}`}>
@@ -1488,17 +1513,30 @@ export function AppTabs() {
                                 </div>
                               </div>
                             ) : (
-                              <label className="depth-secondary mt-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-secondary/25 bg-slate-950/80 px-4 py-8 text-sm text-slate-300">
-                                <ImagePlus className="h-6 w-6 text-secondary-tint" />
-                                <span>Sube una foto</span>
-                                <span className="text-xs text-slate-500">Rostro visible, fondo claro</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={handleVideoFileChange}
-                                />
-                              </label>
+                              <div className="mt-3 grid grid-cols-2 gap-2">
+                                <label className="depth-secondary flex cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-secondary/25 bg-slate-950/80 px-4 py-8 text-sm text-slate-300">
+                                  <ImagePlus className="h-6 w-6 text-secondary-tint" />
+                                  <span>Sube una foto</span>
+                                  <span className="text-xs text-slate-500">Rostro visible, fondo claro</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleVideoFileChange}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPickerTarget({ setter: setVideoSource, mediaType: 'image' })
+                                    setPickerOpen(true)
+                                  }}
+                                  className="depth-secondary flex cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-primary/25 bg-primary/5 px-4 py-8 text-sm text-primary/80 transition hover:border-primary/50 hover:bg-primary/10"
+                                >
+                                  <ImageIcon className="h-6 w-6 text-primary/60" />
+                                  <span>De la galería</span>
+                                </button>
+                              </div>
                             )}
                           </div>
 
@@ -1782,6 +1820,13 @@ export function AppTabs() {
                           <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
                             Origen
                           </Label>
+                          {videoModel.includes('seedance-2.0') && (
+                            <div className="mt-2 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 px-3 py-2">
+                              <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                                Este modelo no funciona bien con fotos de personas. Usa paisajes, objetos o escenas sin rostros.
+                              </p>
+                            </div>
+                          )}
                           {videoSource ? (
                             <div className="depth-mixed mt-3 overflow-hidden rounded-3xl border border-secondary/20 bg-slate-950/80">
                               <div className="relative aspect-video">
@@ -1804,16 +1849,29 @@ export function AppTabs() {
                               </div>
                             </div>
                           ) : (
-                            <label className="depth-secondary mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-3xl border border-dashed border-secondary/25 bg-slate-950/80 px-4 py-8 text-sm text-slate-300">
-                              <ImagePlus className="h-4 w-4 text-secondary-tint" />
-                              Sube una imagen
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={handleVideoFileChange}
-                              />
-                            </label>
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                              <label className="depth-secondary flex cursor-pointer items-center justify-center gap-2 rounded-3xl border border-dashed border-secondary/25 bg-slate-950/80 px-4 py-8 text-sm text-slate-300">
+                                <ImagePlus className="h-4 w-4 text-secondary-tint" />
+                                Sube una imagen
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={handleVideoFileChange}
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPickerTarget({ setter: setVideoSource, mediaType: 'image' })
+                                  setPickerOpen(true)
+                                }}
+                                className="depth-secondary flex cursor-pointer items-center justify-center gap-2 rounded-3xl border border-dashed border-primary/25 bg-primary/5 px-4 py-8 text-sm text-primary/80 transition hover:border-primary/50 hover:bg-primary/10"
+                              >
+                                <ImageIcon className="h-4 w-4 text-primary/60" />
+                                De la galería
+                              </button>
+                            </div>
                           )}
                         </div>
                       ) : null}
@@ -2405,5 +2463,31 @@ export function AppTabs() {
         {mainTab === 'gallery' ? <Gallery onSwitchTab={setMainTab} /> : <R2Manager onSwitchTab={setMainTab} />}
       </section>
     </div>
+    <GalleryPicker
+      open={pickerOpen}
+      onOpenChange={setPickerOpen}
+      mediaType={pickerTarget?.mediaType ?? 'image'}
+      onSelect={(url) => {
+        if (pickerTarget) pickerTarget.setter(url)
+      }}
+    />
+    <GalleryPicker
+      open={multiPickerOpen}
+      onOpenChange={setMultiPickerOpen}
+      mediaType="image"
+      multiple
+      maxSelection={multiPickerTarget ? multiPickerTarget.max - multiPickerTarget.current.length : 3}
+      onSelect={(url, _item) => {
+        if (multiPickerTarget) {
+          const remaining = multiPickerTarget.max - multiPickerTarget.current.length
+          if (remaining <= 0) {
+            toast.error(`Máximo ${multiPickerTarget.max} referencias`)
+            return
+          }
+          multiPickerTarget.setter([...multiPickerTarget.current, url].slice(0, multiPickerTarget.max))
+        }
+      }}
+    />
+    </>
   )
 }

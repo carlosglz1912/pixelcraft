@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
@@ -31,7 +31,6 @@ import {
 import { formatCostEstimate, formatCostEstimateMxn } from '@/lib/cost-estimate'
 import { createDownloadStem, downloadRemoteFile } from '@/lib/download'
 import { estimateImageTransformCostFromUrl } from '@/lib/image-dimensions'
-import { isFalUrl } from '@/lib/utils/url'
 import { useGallery } from '@/stores/gallery'
 import {
   BG_REMOVAL_MODELS,
@@ -47,7 +46,9 @@ import {
   type CostTier,
   type PendingMedia,
 } from '@/types'
+import { EditHistory } from '@/components/features/edit-history'
 import {
+  ArrowDownUp,
   ArrowRight,
   Database,
   Download,
@@ -140,7 +141,7 @@ function PendingGalleryCard({ item }: { item: PendingMedia }) {
   const displayModel = getDisplayModel(item.model, item.type, item.metadata?.videoMode)
 
   return (
-    <div className="depth-mixed mb-4 block w-full break-inside-avoid overflow-hidden rounded-[1.35rem] border border-secondary/15 bg-slate-900/78 text-left">
+    <div className="depth-mixed overflow-hidden rounded-2xl border border-secondary/15 bg-slate-900/78 text-left">
       <div className="relative overflow-hidden">
         <Skeleton
           className={`${frameClass} w-full rounded-none`}
@@ -152,19 +153,15 @@ function PendingGalleryCard({ item }: { item: PendingMedia }) {
           </span>
         </div>
       </div>
-      <div className="space-y-2 px-4 py-4">
-        <div className="flex items-center gap-2">
+      <div className="px-3 py-2.5">
+        <div className="flex items-center gap-1.5">
           {item.type === 'video' ? (
-            <Video className="h-4 w-4 text-secondary-tint" />
+            <Video className="h-3.5 w-3.5 shrink-0 text-secondary-tint" />
           ) : (
-            <ImageIcon className="h-4 w-4 text-primary-tint" />
+            <ImageIcon className="h-3.5 w-3.5 shrink-0 text-primary-tint" />
           )}
-          <p className="truncate text-sm font-semibold text-white">{displayModel}</p>
+          <p className="truncate text-xs font-medium text-white">{displayModel}</p>
           <CostBadge tier={item.costTier} />
-        </div>
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-full bg-slate-700/70" />
-          <Skeleton className="h-4 w-2/3 bg-slate-700/70" />
         </div>
       </div>
     </div>
@@ -180,7 +177,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
   const [upscaleModel, setUpscaleModel] = useState<UpscaleModelId>('fal-ai/imageutils/super-resolution')
   const [bgRemovalModel, setBgRemovalModel] = useState<BgRemovalModelId>('fal-ai/imageutils/rembg')
   const [loadingAction, setLoadingAction] = useState<'upscale' | 'remove-bg' | null>(null)
-  const migratingIdsRef = useRef<Set<string>>(new Set())
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'type'>('newest')
 
   const router = useRouter()
   const items = useGallery((state) => state.items)
@@ -193,7 +190,28 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
   const clear = useGallery((state) => state.clear)
   const getById = useGallery((state) => state.getById)
   const isPersisting = useGallery((state) => state.isPersisting)
-  const migrateItemToR2 = useGallery((state) => state.migrateItemToR2)
+  const hydrateFromR2 = useGallery((state) => state.hydrateFromR2)
+  const migrateUnpersistedItems = useGallery((state) => state.migrateUnpersistedItems)
+  const getEditHistory = useGallery((state) => state.getEditHistory)
+
+  const sortedItems = useMemo(() => {
+    const sorted = [...items]
+    switch (sortBy) {
+      case 'newest':
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'oldest':
+        sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        break
+      case 'type':
+        sorted.sort((a, b) => {
+          if (a.type !== b.type) return a.type === 'video' ? -1 : 1
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
+        break
+    }
+    return sorted
+  }, [items, sortBy])
 
   useEffect(() => {
     const staleIds = pendingItems
@@ -304,7 +322,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
               return
             }
 
-            if (status.status === 'FAILED' || status.status === 'CANCELLED') {
+            if ((status.status as string) === 'FAILED' || (status.status as string) === 'CANCELLED') {
               console.error('[video.polling.terminal]', {
                 requestId,
                 status: status.status,
@@ -333,27 +351,12 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
   }, [addWithPersistence, pendingItems, removePending])
 
   useEffect(() => {
-    const migratingIds = migratingIdsRef.current
-    const itemsToMigrate = items.filter(
-      (item) => !item.metadata?.persisted && isFalUrl(item.url) && !migratingIds.has(item.id)
-    )
+    void hydrateFromR2()
+  }, [hydrateFromR2])
 
-    if (itemsToMigrate.length === 0) return
-
-    itemsToMigrate.forEach((item) => migratingIds.add(item.id))
-
-    void (async () => {
-      for (const item of itemsToMigrate) {
-        try {
-          await migrateItemToR2(item.id)
-        } catch (error) {
-          console.error('Failed to migrate item:', item.id, error)
-        } finally {
-          migratingIds.delete(item.id)
-        }
-      }
-    })()
-  }, [items, migrateItemToR2])
+  useEffect(() => {
+    migrateUnpersistedItems()
+  }, [items, migrateUnpersistedItems])
 
   async function handleCreateVariant(
     variant: Omit<GeneratedMediaBase, 'url'>,
@@ -558,8 +561,31 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                </Badge>
              )}
            </div>
-           <div className="flex items-center gap-2">
-             {onSwitchTab && (
+            <div className="flex items-center gap-2">
+              <div className="depth-secondary flex items-center gap-1 rounded-2xl border border-secondary/15 bg-secondary/10 px-1 py-0.5">
+                <button
+                  type="button"
+                  onClick={() => setSortBy('newest')}
+                  className={`rounded-xl px-2.5 py-1 text-xs font-medium transition ${sortBy === 'newest' ? 'bg-primary/20 text-primary-tint' : 'text-secondary-tint hover:text-white'}`}
+                >
+                  Recientes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('oldest')}
+                  className={`rounded-xl px-2.5 py-1 text-xs font-medium transition ${sortBy === 'oldest' ? 'bg-primary/20 text-primary-tint' : 'text-secondary-tint hover:text-white'}`}
+                >
+                  Antiguos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('type')}
+                  className={`rounded-xl px-2.5 py-1 text-xs font-medium transition ${sortBy === 'type' ? 'bg-primary/20 text-primary-tint' : 'text-secondary-tint hover:text-white'}`}
+                >
+                  Tipo
+                </button>
+              </div>
+              {onSwitchTab && (
                <button
                  type="button"
                  onClick={() => onSwitchTab('storage')}
@@ -603,23 +629,22 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
           </div>
         ) : (
           <ScrollArea className="h-[calc(100vh-4.75rem)]">
-            <div className="columns-2 gap-4 p-5 xl:columns-3 min-[1600px]:columns-4 min-[2200px]:columns-5">
+            <div className="grid auto-rows-auto grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 p-5">
               {pendingItems.map((item) => (
                 <PendingGalleryCard key={item.id} item={item} />
               ))}
-              {items.map((item, index) => (
-                <div key={item.id} className="group relative mb-4 block w-full break-inside-avoid">
+              {sortedItems.map((item, index) => (
+                <div key={item.id} className="group relative">
                   <button
                     type="button"
                     onClick={() => setSelected(item)}
-                    className="depth-mixed block w-full overflow-hidden rounded-[1.35rem] border border-secondary/15 bg-slate-900/78 text-left transition hover:border-primary/30"
+                    className="depth-mixed block w-full overflow-hidden rounded-2xl border border-secondary/15 bg-slate-900/78 text-left transition hover:border-primary/30"
                   >
-                    <div className="relative overflow-hidden">
-                      <div className={`relative w-full ${getMediaFrameClass(item.type, item.metadata)}`}>
+                    <div className={`relative w-full bg-black/40 ${getMediaFrameClass(item.type, item.metadata)}`}>
                         {item.type === 'video' ? (
                           <video
                             src={item.url}
-                            className="absolute inset-0 h-full w-full bg-black object-cover"
+                            className="absolute inset-0 h-full w-full object-contain"
                             muted
                             playsInline
                           />
@@ -628,55 +653,46 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                             src={item.url}
                             alt={item.prompt}
                             fill
-                            className="object-cover"
+                            className="object-contain"
                             priority={index === 0}
-                            loading={index < 4 ? 'eager' : 'lazy'}
+                            loading={index < 8 ? 'eager' : 'lazy'}
+                            fetchPriority={index === 0 ? 'high' : undefined}
                             unoptimized
                           />
                         )}
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                      <div className="absolute right-14 top-3 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                        <span className="depth-primary rounded-full border border-primary/20 bg-primary/15 p-2 text-primary-tint">
-                          <Expand className="h-4 w-4" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                      <div className="absolute right-2.5 top-2.5 opacity-0 transition-opacity group-hover:opacity-100">
+                        <span className="depth-primary rounded-full border border-primary/20 bg-primary/15 p-1.5 text-primary-tint">
+                          <Expand className="h-3.5 w-3.5" />
                         </span>
                       </div>
-                    </div>
-                    <div className="space-y-2 px-4 py-4">
-                      <div className="flex items-center gap-2">
+                    <div className="px-3 py-2.5">
+                      <div className="flex items-center gap-1.5">
                         {item.type === 'video' ? (
-                          <Video className="h-4 w-4 text-secondary-tint" />
+                          <Video className="h-3.5 w-3.5 shrink-0 text-secondary-tint" />
                         ) : (
-                          <ImageIcon className="h-4 w-4 text-primary-tint" />
+                          <ImageIcon className="h-3.5 w-3.5 shrink-0 text-primary-tint" />
                         )}
-                        <p className="truncate text-sm font-semibold text-white">
+                        <p className="truncate text-xs font-medium text-white">
                           {getDisplayModel(item.model, item.type, item.metadata?.videoMode)}
                         </p>
                         <CostBadge tier={item.costTier} />
                       </div>
-                        {typeof item.metadata?.estimatedCost === 'number' ? (
-                          <p className="text-xs text-primary-tint">
-                            Estimado al lanzar: {formatCostEstimateMxn(item.metadata.estimatedCost)}
-                            <span className="ml-1 text-slate-400">
-                              ({formatCostEstimate(item.metadata.estimatedCost)} USD)
-                            </span>
-                          </p>
-                        ) : null}
-                        <p className="line-clamp-2 text-sm text-slate-300">{item.prompt}</p>
-                      </div>
-                    </button>
+                    </div>
+                  </button>
 
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="secondary"
-                      aria-label="Descargar recurso"
-                      className="absolute right-3 top-3 z-10 h-9 w-9 opacity-0 transition-opacity group-hover:opacity-100"
-                      onClick={() => void handleDownloadItem(item)}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="secondary"
+                    aria-label="Descargar recurso"
+                    className="absolute right-1.5 top-1.5 z-10 h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
+                    onClick={() => void handleDownloadItem(item)}
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               ))}
             </div>
           </ScrollArea>
@@ -883,6 +899,17 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                         Las acciones de edición solo están disponibles para imágenes.
                       </div>
                     ) : null}
+
+                    {selected && (() => {
+                      const history = getEditHistory(selected.id)
+                      return history.length > 1 ? (
+                        <EditHistory
+                          history={history}
+                          currentItemId={selected.id}
+                          onSelectItem={(item) => setSelected(item)}
+                        />
+                      ) : null
+                    })()}
 
                     <Button
                       onClick={() => void handleDownloadItem(selected)}
