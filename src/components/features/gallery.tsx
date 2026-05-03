@@ -687,7 +687,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
               </p>
               <button
                 type="button"
-                className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/20 px-6 py-3 text-sm font-semibold text-primary-tint transition hover:bg-primary/30 hover:border-primary/40"
+                className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/20 px-6 py-3 text-sm font-semibold text-primary-tint transition hover:bg-primary/30 hover:border-primary/40 active:scale-[0.98]"
               >
                 <Sparkles className="h-4 w-4" />
                 Comenzar a crear
@@ -719,7 +719,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                   <button
                     type="button"
                     onClick={() => setSelected(item)}
-                    className="depth-mixed block w-full overflow-hidden rounded-2xl border border-secondary/15 bg-slate-900/78 text-left transition hover:border-primary/30"
+                    className="depth-mixed card-hover block w-full overflow-hidden rounded-2xl border border-secondary/15 bg-slate-900/78 text-left transition"
                   >
                     <div className={`relative w-full bg-black/40 ${getMediaFrameClass(item.type, item.metadata)}`}>
                         {item.type === 'video' ? (

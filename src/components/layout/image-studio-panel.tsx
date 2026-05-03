@@ -161,7 +161,7 @@ export function ImageStudioPanel({
   return (
     <>
       <div className="depth-mixed rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-        <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+        <Label className="text-label text-secondary-tint">
           Prompt
         </Label>
         <Textarea
@@ -183,7 +183,7 @@ export function ImageStudioPanel({
       {supportsImageReference ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+            <Label className="text-label text-secondary-tint">
               {supportsImageReferences ? 'Referencias' : 'Referencia'}
             </Label>
             <Badge variant="secondary" className="depth-secondary border border-secondary/25 bg-secondary/10 text-secondary-tint">
@@ -246,7 +246,7 @@ export function ImageStudioPanel({
       {supportsImagePromptStrength ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
           <div className="flex items-center justify-between">
-            <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+            <Label className="text-label text-secondary-tint">
               Fuerza de referencia
             </Label>
             <span className="text-sm text-primary-tint">{imagePromptStrength.toFixed(2)}</span>
@@ -264,7 +264,7 @@ export function ImageStudioPanel({
 
       <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Models
           </Label>
           <Badge variant="secondary" className="depth-secondary border border-secondary/25 bg-secondary/10 text-secondary-tint">
@@ -313,7 +313,7 @@ export function ImageStudioPanel({
 
       {supportsSize ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Aspect Ratio
           </Label>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -335,7 +335,7 @@ export function ImageStudioPanel({
 
       {supportsImageAspectRatio ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Frame
           </Label>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -357,7 +357,7 @@ export function ImageStudioPanel({
 
       {supportsImageResolution ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Resolution
           </Label>
           <div className="mt-3 grid grid-cols-3 gap-2">
@@ -381,7 +381,7 @@ export function ImageStudioPanel({
 
       {supportsImageStyle ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Estilo
           </Label>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -405,7 +405,7 @@ export function ImageStudioPanel({
 
       {supportsImageColors ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Colores
           </Label>
           <Textarea
@@ -419,7 +419,7 @@ export function ImageStudioPanel({
 
       {supportsImageOutputFormat ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Output
           </Label>
           <Select value={imageOutputFormat} onValueChange={setImageOutputFormat}>
@@ -439,7 +439,7 @@ export function ImageStudioPanel({
 
       {supportsImageQuality ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Quality
           </Label>
           <Select value={imageQuality} onValueChange={setImageQuality}>
@@ -459,7 +459,7 @@ export function ImageStudioPanel({
 
       {supportsImageBackground ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Background
           </Label>
           <Select value={imageBackground} onValueChange={setImageBackground}>
@@ -480,7 +480,7 @@ export function ImageStudioPanel({
       {supportsNumImages ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
           <div className="flex items-center justify-between">
-            <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+            <Label className="text-label text-secondary-tint">
                Lote
             </Label>
             <span className="text-sm text-primary-tint">{numImages}</span>
@@ -499,7 +499,7 @@ export function ImageStudioPanel({
       {supportsGuidance ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
           <div className="flex items-center justify-between">
-            <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+            <Label className="text-label text-secondary-tint">
                Guía
             </Label>
             <span className="text-sm text-primary-tint">{guidanceScale}</span>
@@ -516,14 +516,14 @@ export function ImageStudioPanel({
       ) : null}
 
       <details className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-        <summary className="cursor-pointer list-none text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+        <summary className="cursor-pointer list-none text-label text-secondary-tint">
            Avanzado
         </summary>
         <div className="mt-4 space-y-4">
           {supportsImageSeed ? (
             <div>
               <div className="flex items-center justify-between">
-                <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <Label className="text-label text-slate-400">
                                  Semilla
                               </Label>
                 <button
@@ -543,7 +543,7 @@ export function ImageStudioPanel({
           {supportsSteps ? (
             <div>
               <div className="flex items-center justify-between">
-                <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <Label className="text-label text-slate-400">
                                    Pasos
                                 </Label>
                 <span className="text-sm text-primary-tint">{numInferenceSteps}</span>

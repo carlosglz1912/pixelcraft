@@ -277,7 +277,7 @@ export function R2Manager({ onSwitchTab }: R2ManagerProps) {
                   <button
                     key={item._id}
                     onClick={() => setSelectedItem(item)}
-                    className="group relative aspect-square overflow-hidden rounded-xl border border-secondary/15 bg-slate-950/50 transition hover:border-primary/30"
+                    className="group relative aspect-square overflow-hidden rounded-xl border border-secondary/15 bg-slate-950/50 transition card-hover"
                   >
                     {item.type === 'image' ? (
                       <Image

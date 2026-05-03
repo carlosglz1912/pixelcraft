@@ -29,7 +29,7 @@ export function SidebarHeader({ sidebarCollapsed, onToggleCollapse, onClose }: S
           variant="ghost"
           size="icon"
           onClick={onClose ?? onToggleCollapse}
-          className={`depth-secondary rounded-2xl border border-secondary/25 bg-secondary/10 text-secondary-tint hover:bg-secondary/15 hover:text-white ${onClose ? 'h-11 w-11' : 'h-10 w-10'}`}
+          className={`depth-secondary rounded-2xl border border-secondary/25 bg-secondary/10 text-secondary-tint hover:bg-secondary/15 hover:text-white active:scale-[0.98] transition-transform ${onClose ? 'h-11 w-11' : 'h-10 w-10'}`}
         >
           {onClose ? (
             <X className="h-4 w-4" />

@@ -32,7 +32,7 @@ export function SidebarFooterExpanded({
       <Button
         onClick={onGenerate}
         disabled={disabled}
-        className="depth-primary h-12 w-full rounded-3xl border border-primary/30 bg-primary/90 text-primary-foreground hover:bg-primary"
+        className="depth-primary h-12 w-full rounded-3xl border border-primary/30 bg-primary/90 text-primary-foreground hover:bg-primary active:scale-[0.98] transition-transform"
       >
         {studioMode === 'image' ? (
           <Sparkles className="mr-2 h-4 w-4" />
@@ -58,7 +58,7 @@ export function SidebarFooterCollapsed({
       <Button
         onClick={onGenerate}
         disabled={disabled}
-        className="depth-primary h-11 w-11 rounded-2xl border border-primary/30 bg-primary/90 p-0 text-primary-foreground hover:bg-primary"
+        className="depth-primary h-11 w-11 rounded-2xl border border-primary/30 bg-primary/90 p-0 text-primary-foreground hover:bg-primary active:scale-[0.98] transition-transform"
       >
         {studioMode === 'image' ? (
           <Sparkles className="h-4 w-4" />

@@ -246,7 +246,7 @@ export function VideoStudioPanel({
         </div>
 
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Foto del Avatar
           </Label>
           {videoSource ? (
@@ -296,7 +296,7 @@ export function VideoStudioPanel({
         </div>
 
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Audio (habla o canto)
           </Label>
           {videoAudioUrl ? (
@@ -329,7 +329,7 @@ export function VideoStudioPanel({
         </div>
 
         <div className="depth-mixed rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Estilo del video (opcional)
           </Label>
           <Textarea
@@ -345,7 +345,7 @@ export function VideoStudioPanel({
 
         <div className="grid grid-cols-3 gap-2">
           <div className="depth-secondary rounded-2xl border border-secondary/20 bg-slate-900/70 p-3">
-            <Label className="text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-secondary-tint">
+            <Label className="text-sublabel text-secondary-tint">
               Resolución
             </Label>
             <div className="mt-2 grid grid-cols-1 gap-1">
@@ -368,7 +368,7 @@ export function VideoStudioPanel({
 
           <div className="depth-secondary rounded-2xl border border-secondary/20 bg-slate-900/70 p-3">
             <div className="flex items-center justify-between">
-              <Label className="text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-secondary-tint">
+              <Label className="text-sublabel text-secondary-tint">
                 Visual
               </Label>
               <span className="text-xs text-primary-tint">{videoGuidanceScale.toFixed(1)}</span>
@@ -386,7 +386,7 @@ export function VideoStudioPanel({
 
           <div className="depth-secondary rounded-2xl border border-secondary/20 bg-slate-900/70 p-3">
             <div className="flex items-center justify-between">
-              <Label className="text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-secondary-tint">
+              <Label className="text-sublabel text-secondary-tint">
                 Lip-sync
               </Label>
               <span className="text-xs text-primary-tint">{videoAudioGuidanceScale.toFixed(1)}</span>
@@ -406,7 +406,7 @@ export function VideoStudioPanel({
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
           <details className="group">
             <summary className="flex cursor-pointer list-none items-center justify-between">
-              <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+              <Label className="text-label text-secondary-tint">
                 Cambiar modelo
               </Label>
               <ChevronRight className="h-4 w-4 text-slate-400 transition group-open:rotate-90" />
@@ -459,7 +459,7 @@ export function VideoStudioPanel({
     <>
       <div className="depth-mixed rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
         <div className="flex items-center justify-between gap-3">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             {isUsingVideoMultiPrompt ? 'Multi-shot' : 'Prompt'}
           </Label>
           {supportsVideoMultiPrompt ? (
@@ -551,7 +551,7 @@ export function VideoStudioPanel({
 
       {videoModeOptions.length > 1 ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Modo
           </Label>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -575,7 +575,7 @@ export function VideoStudioPanel({
 
       {requiresVideoSource ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Origen
           </Label>
           {videoModel.includes('seedance-2.0') && (
@@ -635,7 +635,7 @@ export function VideoStudioPanel({
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+              <Label className="text-label text-secondary-tint">
                 Elementos
               </Label>
               <p className="mt-1 text-xs text-slate-400">
@@ -708,7 +708,7 @@ export function VideoStudioPanel({
                   {element.type === 'image' ? (
                     <div className="mt-3 space-y-3">
                       <div>
-                        <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+                        <Label className="text-label text-secondary-tint">
                           Imagen frontal
                         </Label>
                         {element.frontalImageUrl ? (
@@ -745,7 +745,7 @@ export function VideoStudioPanel({
                       </div>
 
                       <div>
-                        <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+                        <Label className="text-label text-secondary-tint">
                           Referencias
                         </Label>
                         <label className="depth-secondary mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-3xl border border-dashed border-secondary/25 bg-slate-950/80 px-4 py-4 text-sm text-slate-300">
@@ -797,7 +797,7 @@ export function VideoStudioPanel({
                   ) : (
                     <div className="mt-3 space-y-3">
                       <div>
-                        <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+                        <Label className="text-label text-secondary-tint">
                           Video del elemento
                         </Label>
                         {element.videoUrl ? (
@@ -827,7 +827,7 @@ export function VideoStudioPanel({
                         )}
                       </div>
                       <div>
-                        <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+                        <Label className="text-label text-secondary-tint">
                           Voice ID
                         </Label>
                         <Input
@@ -851,7 +851,7 @@ export function VideoStudioPanel({
         <details className="group">
           <summary className="flex cursor-pointer list-none items-center justify-between">
             <div className="flex items-center gap-3">
-              <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+              <Label className="text-label text-secondary-tint">
                 Modelos
               </Label>
               {supportsVideoAudio && (
@@ -921,7 +921,7 @@ export function VideoStudioPanel({
 
       {supportsVideoDuration && !isUsingVideoMultiPrompt ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
              Duración
           </Label>
           <Select value={videoDuration} onValueChange={setVideoDuration}>
@@ -942,7 +942,7 @@ export function VideoStudioPanel({
       {supportsVideoCfg ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
           <div className="flex items-center justify-between">
-            <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+            <Label className="text-label text-secondary-tint">
               CFG
             </Label>
             <span className="text-sm text-primary-tint">{videoCfgScale.toFixed(1)}</span>
@@ -972,7 +972,7 @@ export function VideoStudioPanel({
 
       {supportsVideoRatio ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Aspect Ratio
           </Label>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -994,7 +994,7 @@ export function VideoStudioPanel({
 
       {supportsVideoResolution ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Resolution
           </Label>
           <div className="mt-3 grid grid-cols-3 gap-2">
@@ -1019,7 +1019,7 @@ export function VideoStudioPanel({
       {supportsVideoSeed ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
           <div className="flex items-center justify-between">
-            <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+            <Label className="text-label text-secondary-tint">
               Seed
             </Label>
             <button
@@ -1043,7 +1043,7 @@ export function VideoStudioPanel({
 
       {supportsVideoQuality ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Calidad
           </Label>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1067,7 +1067,7 @@ export function VideoStudioPanel({
 
       {supportsVideoFrames ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Frames
           </Label>
           <input
@@ -1084,7 +1084,7 @@ export function VideoStudioPanel({
 
       {supportsVideoFps ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             FPS
           </Label>
           <input
@@ -1101,7 +1101,7 @@ export function VideoStudioPanel({
 
       {supportsVideoStepsExtra ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Steps
           </Label>
           <input
@@ -1118,7 +1118,7 @@ export function VideoStudioPanel({
 
       {supportsVideoAcceleration ? (
         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+          <Label className="text-label text-secondary-tint">
             Aceleración
           </Label>
           <div className="mt-3 grid grid-cols-2 gap-2">
