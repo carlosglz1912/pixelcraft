@@ -1,0 +1,23 @@
+src/app/globals.css
+  e75c95f467607a80 48-57,237-265
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "41fa0dcdd6a3648115f951f8ea1589f3a4d12a7a",
+  "prompts": {
+    "e75c95f467607a80": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "cad9456a-4c28-444f-8b7b-c8735a5f8ec6",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 39,
+      "total_deletions": 0,
+      "accepted_lines": 39,
+      "overriden_lines": 0
+    }
+  }
+}
