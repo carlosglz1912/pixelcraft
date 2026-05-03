@@ -1,0 +1,25 @@
+src/lib/motion.ts
+  83ffc997cc83bd65 1-98
+package.json
+  83ffc997cc83bd65 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "d2ce1a3796d1c12d544aae18b0d598654e0f413d",
+  "prompts": {
+    "83ffc997cc83bd65": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "e132db9a-5831-40ee-8d9b-27a753e3b9b1",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 99,
+      "total_deletions": 0,
+      "accepted_lines": 99,
+      "overriden_lines": 0
+    }
+  }
+}
