@@ -32,15 +32,12 @@ function sanitizeItemForPersistence(item: GeneratedMedia): GeneratedMedia | null
     return null
   }
 
-  const filteredReferences = item.metadata?.references?.filter((reference) => !isEphemeralUrl(reference))
-
   return {
     ...item,
     metadata: item.metadata
       ? {
           ...item.metadata,
           source: isEphemeralUrl(item.metadata.source) ? undefined : item.metadata.source,
-          references: filteredReferences?.length ? filteredReferences : undefined,
         }
       : undefined,
   }

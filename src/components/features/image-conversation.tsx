@@ -214,7 +214,7 @@ export function ImageConversation({ initialImageUrl }: { initialImageUrl: string
         metadata: {
           sourceId: currentIteration?.sourceId ?? initialGalleryItem?.id,
           source: currentImageUrl,
-          references: canUseReferences ? referenceImages : undefined,
+          referenceCount: canUseReferences ? referenceImages.length : undefined,
           strength: canAdjustStrength ? strength / 100 : undefined,
           costTier: editCostTier,
         },

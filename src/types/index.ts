@@ -27,7 +27,7 @@ export interface GenerationMetadata {
   sourceId?: string
   source?: string
   strength?: number
-  references?: string[]
+  referenceCount?: number
   storageId?: string
   persisted?: boolean
   negativePrompt?: string
@@ -130,6 +130,7 @@ export type ImageModelSupport =
   | 'num_inference_steps'
   | 'seed'
   | 'reference_image'
+  | 'reference_images'
   | 'image_prompt_strength'
   | 'style'
   | 'colors'
@@ -222,7 +223,7 @@ export const IMAGE_MODEL_FAMILIES: Record<string, ImageModelFamily> = {
   recraft: {
     name: 'Recraft',
     models: {
-      'recraft/v3': { 
+      'recraft-v3': { 
         name: 'V3', 
         supports: ['image_size', 'style', 'colors'] as const,
         costTier: 'medium',
@@ -274,6 +275,21 @@ export const IMAGE_MODEL_FAMILIES: Record<string, ImageModelFamily> = {
           bestFor: ['Prompt adherence', 'Texto en imagen', 'Ads', 'Producto']
         }
       },
+      'openai/gpt-image-2': {
+        name: 'GPT Image 2',
+        supports: ['image_size', 'num_images', 'output_format', 'quality'] as const,
+        costTier: 'premium',
+        info: {
+          description: 'Ultimo modelo de imagen de OpenAI. Imagenes extremadamente detalladas con tipografia fina y alta adherencia al prompt.',
+          tips: [
+            'Usa quality high para piezas finales',
+            'Destaca por texto legible dentro de la imagen',
+            'Funciona especialmente bien con prompts muy especificos',
+            'Soporta hasta 4 imagenes por batch'
+          ],
+          bestFor: ['Prompt adherence', 'Texto en imagen', 'Detalle extremo', 'Fotorealismo']
+        }
+      },
     },
   },
   google: {
@@ -295,7 +311,7 @@ export const IMAGE_MODEL_FAMILIES: Record<string, ImageModelFamily> = {
       },
       'nano-banana-2': {
         name: 'Nano Banana 2',
-        supports: ['aspect_ratio', 'resolution', 'num_images', 'output_format', 'seed', 'reference_image'] as const,
+        supports: ['aspect_ratio', 'resolution', 'num_images', 'output_format', 'seed', 'reference_images'] as const,
         costTier: 'high',
         info: {
           description: 'La variante mas fuerte de la familia Nano Banana. Mejora calidad, costo por resultado y detalle frente a la version base.',

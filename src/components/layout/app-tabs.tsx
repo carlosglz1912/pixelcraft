@@ -234,7 +234,18 @@ export function AppTabs() {
 
   const [prompt, setPrompt] = useState('')
   const [negativePrompt, setNegativePrompt] = useState('')
-  const [imageModel, setImageModel] = useState('flux/schnell')
+  const [imageModel, setImageModelState] = useState('flux/schnell')
+  const setImageModel = (model: string) => {
+    setImageModelState(model)
+    const supports = getImageModelConfig(model)?.supports ?? []
+    const isMulti = supports.includes('reference_images')
+    const hasRef = supports.includes('reference_image') || isMulti
+    if (!hasRef) {
+      setReferenceImages([])
+    } else if (!isMulti && referenceImages.length > 1) {
+      setReferenceImages((current) => current.slice(0, 1))
+    }
+  }
   const [imageSize, setImageSize] = useState(() => getDefaultImageSize('flux/schnell'))
   const [imageAspectRatio, setImageAspectRatio] = useState(() => getDefaultImageAspectRatio('flux/schnell'))
   const [imageResolution, setImageResolution] = useState(() => getDefaultImageResolution('flux/schnell'))
@@ -305,7 +316,9 @@ export function AppTabs() {
   const supportsGuidance = imageSupports.includes('guidance_scale')
   const supportsSteps = imageSupports.includes('num_inference_steps')
   const supportsImageSeed = imageSupports.includes('seed')
-  const supportsImageReference = imageSupports.includes('reference_image')
+  const supportsImageReference = imageSupports.includes('reference_image') || imageSupports.includes('reference_images')
+  const supportsImageReferences = imageSupports.includes('reference_images')
+  const maxImageReferences = supportsImageReferences ? 3 : 1
   const supportsImagePromptStrength = imageSupports.includes('image_prompt_strength')
   const supportsImageStyle = imageSupports.includes('style')
   const supportsImageColors = imageSupports.includes('colors')
@@ -616,16 +629,26 @@ export function AppTabs() {
   }
 
   async function handleReferenceFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+
+    const remaining = Math.max(0, maxImageReferences - referenceImages.length)
+    if (remaining === 0) {
+      toast.error(`Max ${maxImageReferences} referencia(s)`)
+      e.target.value = ''
+      return
+    }
 
     try {
-      const dataUrl = await fileToDataUrl(file)
-      const optimizedUrl = await optimizeImageIfLarge(dataUrl, 800)
-      setReferenceImages([optimizedUrl])
+      const nextUrls = await Promise.all(
+        files.slice(0, remaining).map(async (file) => optimizeImageIfLarge(await fileToDataUrl(file), 800))
+      )
+      setReferenceImages((current) => [...current, ...nextUrls].slice(0, maxImageReferences))
     } catch (error) {
       toast.error('No se pudieron cargar las referencias')
       console.error(error)
+    } finally {
+      e.target.value = ''
     }
   }
 
@@ -669,7 +692,8 @@ export function AppTabs() {
         numInferenceSteps: supportsSteps
           ? Math.min(Math.max(numInferenceSteps, imageStepSettings.min), imageStepSettings.max)
           : undefined,
-        imageUrl: supportsImageReference ? referenceImages[0] : undefined,
+        imageUrl: supportsImageReference && !supportsImageReferences ? referenceImages[0] : undefined,
+        imageUrlsJson: supportsImageReferences && referenceImages.length > 0 ? JSON.stringify(referenceImages) : undefined,
         imagePromptStrength:
           supportsImagePromptStrength && referenceImages[0] ? imagePromptStrength : undefined,
         style: supportsImageStyle ? imageStyle : undefined,
@@ -716,7 +740,7 @@ export function AppTabs() {
             numInferenceSteps: supportsSteps
               ? Math.min(Math.max(numInferenceSteps, imageStepSettings.min), imageStepSettings.max)
               : undefined,
-            references: supportsImageReference ? referenceImages.slice(0, 1) : undefined,
+            referenceCount: supportsImageReference ? Math.min(referenceImages.length, maxImageReferences) : undefined,
             imagePromptStrength: supportsImagePromptStrength ? imagePromptStrength : undefined,
             imageStyle: supportsImageStyle ? imageStyle : undefined,
             imageColors: supportsImageColors
@@ -1054,44 +1078,50 @@ export function AppTabs() {
                         <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
                           <div className="mb-3 flex items-center justify-between">
                             <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                              Referencia
+                              {supportsImageReferences ? 'Referencias' : 'Referencia'}
                             </Label>
                             <Badge variant="secondary" className="depth-secondary border border-secondary/25 bg-secondary/10 text-secondary-tint">
-                              {referenceImages.length > 0 ? '1/1' : '0/1'}
+                              {Math.min(referenceImages.length, maxImageReferences)}/{maxImageReferences}
                             </Badge>
                           </div>
 
                           <label className="depth-secondary flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-secondary/25 bg-slate-950/75 px-4 py-4 text-sm text-slate-300">
                             <ImagePlus className="h-4 w-4 text-secondary-tint" />
-                            Add reference
+                            {supportsImageReferences ? 'Add references' : 'Add reference'}
                             <input
                               type="file"
                               accept="image/*"
+                              multiple={supportsImageReferences}
                               className="hidden"
                               onChange={handleReferenceFileChange}
                             />
                           </label>
 
-                          {referenceImages[0] ? (
-                            <div className="mt-3">
-                              <div className="depth-mixed relative overflow-hidden rounded-2xl border border-secondary/20 bg-slate-950/80">
-                                <div className="relative aspect-video">
-                                  <Image
-                                    src={referenceImages[0]}
-                                    alt="Reference"
-                                    fill
-                                    className="object-cover"
-                                    unoptimized
-                                  />
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => setReferenceImages([])}
-                                  className="depth-primary absolute right-2 top-2 rounded-full border border-primary/20 bg-primary/15 px-2 py-1 text-[0.65rem] font-semibold text-primary-tint"
+                          {referenceImages.length > 0 ? (
+                            <div className={`mt-3 ${supportsImageReferences ? 'grid grid-cols-3 gap-2' : ''}`}>
+                              {referenceImages.slice(0, maxImageReferences).map((url, index) => (
+                                <div
+                                  key={`ref-${index}`}
+                                  className="depth-mixed relative overflow-hidden rounded-2xl border border-secondary/20 bg-slate-950/80"
                                 >
-                                  Eliminar
-                                </button>
-                              </div>
+                                  <div className={supportsImageReferences ? 'relative aspect-square' : 'relative aspect-video'}>
+                                    <Image
+                                      src={url}
+                                      alt={`Reference ${index + 1}`}
+                                      fill
+                                      className="object-cover"
+                                      unoptimized
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setReferenceImages((current) => current.filter((_, i) => i !== index))}
+                                    className="depth-primary absolute right-2 top-2 rounded-full border border-primary/20 bg-primary/15 px-2 py-1 text-[0.65rem] font-semibold text-primary-tint"
+                                  >
+                                    Eliminar
+                                  </button>
+                                </div>
+                              ))}
                             </div>
                           ) : null}
                         </div>
