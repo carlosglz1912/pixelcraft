@@ -3,7 +3,7 @@
 import { useEffect, useState, type ChangeEvent } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, ImagePlus, Loader2, Sparkles, X } from 'lucide-react'
+import { ArrowLeft, ImagePlus, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { editImage } from '@/lib/actions'
 import { optimizeImageIfLarge } from '@/lib/image-optimize'
@@ -372,7 +372,7 @@ export function ImageConversation({ initialImageUrl }: { initialImageUrl: string
                 className="depth-primary h-full rounded-2xl border border-primary/25 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span className="mr-2 h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
                 ) : (
                   <Sparkles className="mr-2 h-4 w-4" />
                 )}

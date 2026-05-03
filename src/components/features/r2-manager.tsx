@@ -23,7 +23,6 @@ import {
   Cloud,
   AlertTriangle,
   CheckCircle2,
-  Loader2,
   Copy,
   ImagePlus,
 } from 'lucide-react'
@@ -243,7 +242,7 @@ export function R2Manager({ onSwitchTab }: R2ManagerProps) {
                   disabled={deleting.has('batch')}
                   className="depth-primary border border-primary/25 bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  {deleting.has('batch') ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Mantener el más antiguo'}
+                  {deleting.has('batch') ? 'Eliminando...' : 'Mantener el más antiguo'}
                 </Button>
                 <Button
                   size="sm"
@@ -266,7 +265,7 @@ export function R2Manager({ onSwitchTab }: R2ManagerProps) {
             
             {!items ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary-tint" />
+                <span className="h-2 w-2 rounded-full bg-primary-tint animate-pulse" />
               </div>
             ) : items.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
@@ -365,7 +364,7 @@ export function R2Manager({ onSwitchTab }: R2ManagerProps) {
                   className="w-full depth-secondary border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20"
                 >
                   {deleting.has(selectedItem._id) ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    'Eliminando...'
                   ) : (
                     <Trash2 className="mr-2 h-4 w-4" />
                   )}

@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Skeleton, SkeletonShimmer } from '@/components/ui/skeleton'
 import {
   Select,
   SelectContent,
@@ -55,7 +55,6 @@ import {
   Eraser,
   Expand,
   Image as ImageIcon,
-  Loader2,
   Sparkles,
   Trash2,
   Video,
@@ -144,12 +143,11 @@ function PendingGalleryCard({ item }: { item: PendingMedia }) {
   return (
     <div className="depth-mixed overflow-hidden rounded-2xl border border-secondary/15 bg-slate-900/78 text-left">
       <div className="relative overflow-hidden">
-        <Skeleton
+        <SkeletonShimmer
           className={`${frameClass} w-full rounded-none`}
         />
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-950/35">
-          <span className="flex items-center gap-2 rounded-full border border-secondary/20 bg-slate-950/80 px-3 py-1.5 text-xs font-medium text-white">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-2">
+          <span className="rounded-full border border-secondary/20 bg-slate-950/80 px-3 py-1 text-xs font-medium text-white">
             Generando...
           </span>
         </div>
@@ -551,13 +549,13 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
              </Badge>
              {pendingItems.length > 0 && (
                <Badge variant="secondary" className="depth-secondary border border-secondary/20 bg-secondary/10 text-secondary-tint">
-                 <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                 <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-secondary-tint animate-pulse" />
                  {pendingItems.length} en cola
                </Badge>
              )}
              {isPersisting && (
                <Badge variant="secondary" className="depth-primary border border-green-500/20 bg-green-500/10 text-green-400">
-                 <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                 <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
                  Guardando...
                </Badge>
              )}
@@ -620,12 +618,23 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
 
         {items.length === 0 && pendingItems.length === 0 ? (
           <div className="flex min-h-[calc(100vh-10rem)] flex-1 items-center justify-center p-8">
-            <div className="depth-mixed rounded-[1.8rem] border border-dashed border-secondary/20 bg-slate-900/60 px-10 py-14 text-center">
-              <ImageIcon className="mx-auto h-10 w-10 text-secondary-tint" />
-              <p className="mt-4 text-sm font-medium text-white">La galería está vacía</p>
-              <p className="mt-2 text-sm text-slate-400">
-                Genera una imagen o un video desde el sidebar para llenar el canvas.
+            <div className="depth-mixed max-w-md rounded-[2rem] border border-dashed border-secondary/15 bg-slate-900/70 px-12 py-16 text-center">
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
+                  <Sparkles className="h-8 w-8 text-primary-tint" />
+                </div>
+              </div>
+              <p className="text-lg font-semibold text-white">Tu galería está vacía</p>
+              <p className="mt-3 text-sm text-slate-400">
+                Genera tu primera imagen o video para comenzar a crear.
               </p>
+              <button
+                type="button"
+                className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/20 px-6 py-3 text-sm font-semibold text-primary-tint transition hover:bg-primary/30 hover:border-primary/40"
+              >
+                <Sparkles className="h-4 w-4" />
+                Comenzar a crear
+              </button>
             </div>
           </div>
         ) : (
@@ -870,7 +879,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                         className="depth-primary mt-4 h-11 w-full rounded-2xl border border-primary/25 bg-primary text-primary-foreground hover:bg-primary/90"
                       >
                         {loadingAction === 'upscale' ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <span className="mr-2 h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
                         ) : null}
                          Ejecutar upscale
                        </Button>
@@ -898,7 +907,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                         className="depth-primary mt-4 h-11 w-full rounded-2xl border border-primary/25 bg-primary text-primary-foreground hover:bg-primary/90"
                       >
                         {loadingAction === 'remove-bg' ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <span className="mr-2 h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
                         ) : (
                           <Eraser className="mr-2 h-4 w-4" />
                         )}

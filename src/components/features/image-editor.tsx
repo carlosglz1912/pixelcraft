@@ -12,8 +12,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Loader2, Upload, X, Maximize2, Eraser, Pencil, ImageIcon } from 'lucide-react'
+import { Skeleton, SkeletonShimmer } from '@/components/ui/skeleton'
+import { Upload, X, Maximize2, Eraser, Pencil, ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Textarea } from '@/components/ui/textarea'
 import { Slider } from '@/components/ui/slider'
@@ -398,7 +398,7 @@ export function ImageEditor() {
         >
           {loading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <span className="mr-2 h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
               Procesando...
             </>
           ) : (
@@ -420,9 +420,8 @@ export function ImageEditor() {
         <Card className="relative aspect-square w-full max-w-md overflow-hidden bg-muted/50">
           {loading ? (
             <>
-              <Skeleton className="h-full w-full rounded-none" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/45">
-                <Loader2 className="h-8 w-8 animate-spin text-foreground" />
+              <SkeletonShimmer className="h-full w-full rounded-none" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                 <p className="text-sm font-medium text-foreground">Procesando imagen...</p>
               </div>
             </>

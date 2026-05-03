@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useGallery } from '@/stores/gallery'
 import { getCostTierLabel, type CostTier, type GeneratedMedia } from '@/types'
-import { Image as ImageIcon, Video, Check, Loader2 } from 'lucide-react'
+import { Image as ImageIcon, Video, Check } from 'lucide-react'
 
 type MediaTypeFilter = 'image' | 'video' | 'all'
 
