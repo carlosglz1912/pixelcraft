@@ -1,0 +1,25 @@
+src/components/features/gallery.tsx
+  0cf112b32840e3ba 699
+src/components/layout/sidebar-header.tsx
+  0cf112b32840e3ba 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "02476f10ff71d982bbc60434e5692b0fe3699dfa",
+  "prompts": {
+    "0cf112b32840e3ba": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "d52e3161-9139-4f30-ad21-80d9de8c69b0",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
