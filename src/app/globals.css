@@ -127,7 +127,9 @@
       radial-gradient(circle at 88% 16%, color-mix(in oklab, var(--secondary) 28%, transparent) 0, transparent 26%),
       radial-gradient(circle at 48% 100%, color-mix(in oklab, var(--secondary) 12%, transparent) 0, transparent 30%),
       linear-gradient(155deg, #07111b 0%, #0b2236 46%, #14070b 100%);
+    /* 100vh fallback — 100dvh overrides on supporting browsers for mobile viewport fix */
     min-height: 100vh;
+    min-height: 100dvh;
   }
 }
 

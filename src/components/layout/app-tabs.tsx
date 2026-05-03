@@ -180,7 +180,7 @@ export function AppTabs() {
       <div className={`grid min-h-screen ${layoutClass}`}>
         {/* Inline sidebar — hidden on mobile (rendered as overlay drawer instead) */}
         {!isMobile && (
-          <motion.aside layout transition={{ ...SIDEBAR_SPRING }} className="depth-secondary relative h-screen border-r border-secondary/30 bg-slate-950/96">
+          <motion.aside layout transition={{ ...SIDEBAR_SPRING }} className="depth-secondary relative h-screen h-[100dvh] border-r border-secondary/30 bg-slate-950/96">
             {sidebarContent}
           </motion.aside>
         )}

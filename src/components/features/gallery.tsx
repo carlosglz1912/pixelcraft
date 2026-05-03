@@ -674,7 +674,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
         </div>
 
         {items.length === 0 && pendingItems.length === 0 ? (
-          <div className="flex min-h-[calc(100vh-10rem)] flex-1 items-center justify-center p-8">
+          <div className="flex min-h-[calc(100dvh-10rem)] flex-1 items-center justify-center p-8">
             <div className="depth-mixed max-w-md rounded-[2rem] border border-dashed border-secondary/15 bg-slate-900/70 px-12 py-16 text-center">
               <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
@@ -695,7 +695,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
             </div>
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-4.75rem)]">
+          <ScrollArea className="h-[calc(100vh-4.75rem)] h-[calc(100dvh-4.75rem)]">
             <div className="grid auto-rows-auto grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 p-5">
               {pendingItems.map((item) =>
                 item.status === 'failed' ? (
@@ -787,9 +787,9 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
           if (!open) setSelected(null)
         }}
       >
-        <DialogContent className="depth-mixed max-h-[90vh] overflow-hidden border-secondary/25 bg-slate-950/95 p-0 text-white sm:max-w-6xl">
+        <DialogContent className="depth-mixed max-h-[90vh] max-h-[90dvh] overflow-hidden border-secondary/25 bg-slate-950/95 p-0 text-white sm:max-w-6xl">
           {selected ? (
-            <div className="grid max-h-[90vh] grid-cols-1 min-[1280px]:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="grid max-h-[90vh] max-h-[90dvh] grid-cols-1 min-[1280px]:grid-cols-[minmax(0,1fr)_360px]">
               <div className="min-w-0 border-b border-secondary/20 min-[1280px]:border-b-0 min-[1280px]:border-r">
                 <DialogHeader className="surface-secondary border-b border-secondary/20 px-5 py-4">
                   <DialogTitle className="flex items-center gap-2 text-white">
@@ -812,7 +812,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                         src={selected.url}
                         controls
                         autoPlay
-                        className="max-h-[60vh] w-full object-contain"
+                        className="max-h-[60vh] max-h-[60dvh] w-full object-contain"
                       />
                     ) : (
                       <Image
@@ -820,7 +820,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                         alt={selected.prompt}
                         width={1200}
                         height={1200}
-                        className="max-h-[60vh] h-auto w-full object-contain"
+                        className="max-h-[60vh] max-h-[60dvh] h-auto w-full object-contain"
                         unoptimized
                       />
                     )}
@@ -884,7 +884,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                 </div>
               </div>
 
-              <div className="flex max-h-[90vh] flex-col">
+              <div className="flex max-h-[90vh] max-h-[90dvh] flex-col">
                 <div className="surface-secondary border-b border-secondary/20 px-4 py-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-secondary-tint">
                      Acciones de imagen
