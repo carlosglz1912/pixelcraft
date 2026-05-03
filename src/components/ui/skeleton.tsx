@@ -10,4 +10,14 @@ function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-export { Skeleton }
+function SkeletonShimmer({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="skeleton-shimmer"
+      className={cn("bg-muted/30 animate-shimmer rounded-md", className)}
+      {...props}
+    />
+  )
+}
+
+export { Skeleton, SkeletonShimmer }

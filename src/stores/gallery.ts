@@ -21,6 +21,8 @@ interface GalleryState {
   addWithPersistence: (item: GeneratedMediaBase) => Promise<string>
   addPending: (item: Omit<PendingMedia, 'id' | 'createdAt'>, count?: number) => string[]
   removePending: (ids?: string[]) => void
+  markPendingFailed: (id: string, error: string) => void
+  dismissPending: (id: string) => void
   remove: (id: string) => void
   clear: () => void
   getById: (id: string) => GeneratedMedia | undefined
@@ -241,6 +243,7 @@ export const useGallery = create<GalleryState>()(
           ...item,
           id: crypto.randomUUID(),
           createdAt: new Date(),
+          status: 'pending' as const,
         }))
 
         set((state) => ({ pendingItems: [...nextPending, ...state.pendingItems] }))
@@ -257,6 +260,20 @@ export const useGallery = create<GalleryState>()(
         const pendingIds = new Set(ids)
         set((state) => ({
           pendingItems: state.pendingItems.filter((item) => !pendingIds.has(item.id)),
+        }))
+      },
+
+      markPendingFailed: (id, error) => {
+        set((state) => ({
+          pendingItems: state.pendingItems.map((item) =>
+            item.id === id ? { ...item, status: 'failed' as const, error } : item
+          ),
+        }))
+      },
+
+      dismissPending: (id) => {
+        set((state) => ({
+          pendingItems: state.pendingItems.filter((item) => item.id !== id),
         }))
       },
 

@@ -70,6 +70,8 @@ export interface PendingMedia {
     | 'negativePrompt'
   >
   createdAt: Date
+  status?: 'pending' | 'failed'
+  error?: string
 }
 
 export interface PersistedMedia {
