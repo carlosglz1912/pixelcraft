@@ -16,6 +16,8 @@ import { VideoStudioPanel } from '@/components/layout/video-studio-panel'
 import { SidebarHeader } from '@/components/layout/sidebar-header'
 import { StudioModeSelector } from '@/components/layout/studio-mode-selector'
 import { SidebarFooterExpanded, SidebarFooterCollapsed } from '@/components/layout/sidebar-footer'
+import { LayoutGroup, motion, AnimatePresence } from '@/lib/motion'
+import { SIDEBAR_SPRING, SIDEBAR_EXIT_VARIANTS, layoutGroupId } from '@/lib/motion'
 
 export function AppTabs() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -88,8 +90,9 @@ export function AppTabs() {
 
   return (
     <>
+    <LayoutGroup id={layoutGroupId}>
       <div className={`grid min-h-screen ${layoutClass}`}>
-        <aside className="depth-secondary relative h-screen border-r border-secondary/30 bg-slate-950/96">
+        <motion.aside layout transition={{ ...SIDEBAR_SPRING }} className="depth-secondary relative h-screen border-r border-secondary/30 bg-slate-950/96">
           <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-secondary/0 via-secondary/80 to-secondary/0" />
           <div className="flex h-full flex-col">
             <SidebarHeader
@@ -102,37 +105,54 @@ export function AppTabs() {
               sidebarCollapsed={sidebarCollapsed}
             />
 
-            {sidebarCollapsed ? (
-              <div className="flex flex-1 flex-col items-center justify-between px-3 py-4">
-                <div className="flex flex-col gap-3">
-                  <div className="depth-primary flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary-tint">
-                    {studioMode === 'image' ? <Sparkles className="h-4 w-4" /> : <Clapperboard className="h-4 w-4" />}
+            <AnimatePresence mode="wait">
+              {sidebarCollapsed ? (
+                <motion.div
+                  key="collapsed"
+                  variants={SIDEBAR_EXIT_VARIANTS}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit="exit"
+                  className="flex flex-1 flex-col items-center justify-between px-3 py-4"
+                >
+                  <div className="flex flex-col gap-3">
+                    <div className="depth-primary flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary-tint">
+                      {studioMode === 'image' ? <Sparkles className="h-4 w-4" /> : <Clapperboard className="h-4 w-4" />}
+                    </div>
                   </div>
-                </div>
-                <SidebarFooterCollapsed {...footerProps} />
-              </div>
-            ) : (
-              <>
-                <ScrollArea className="min-h-0 flex-1">
-                  <div className="space-y-4 p-4">
-                    {studioMode === 'image' ? (
-                      <ImageStudioPanel {...imageStudio} />
-                    ) : (
-                      <VideoStudioPanel {...videoStudio} />
-                    )}
-                  </div>
-                </ScrollArea>
-                <SidebarFooterExpanded {...footerProps} />
-              </>
-            )}
+                  <SidebarFooterCollapsed {...footerProps} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="expanded"
+                  variants={SIDEBAR_EXIT_VARIANTS}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit="exit"
+                  className="flex flex-1 flex-col"
+                >
+                  <ScrollArea className="min-h-0 flex-1">
+                    <div className="space-y-4 p-4">
+                      {studioMode === 'image' ? (
+                        <ImageStudioPanel {...imageStudio} />
+                      ) : (
+                        <VideoStudioPanel {...videoStudio} />
+                      )}
+                    </div>
+                  </ScrollArea>
+                  <SidebarFooterExpanded {...footerProps} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </aside>
+        </motion.aside>
 
         <section className="depth-mixed relative min-w-0 bg-slate-950/72">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary/0 via-primary/65 to-secondary/65" />
           {mainTab === 'gallery' ? <Gallery onSwitchTab={setMainTab} /> : <R2Manager onSwitchTab={setMainTab} />}
         </section>
       </div>
+    </LayoutGroup>
 
       <GalleryPicker
         open={pickerOpen}
