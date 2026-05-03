@@ -6,8 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clapperboard,
-  Cloud,
-  Database,
   Image as ImageIcon,
   ImagePlus,
   Music,
@@ -29,36 +27,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { enqueueVideoGeneration, generateImage } from '@/lib/actions'
+import { enqueueVideoGeneration } from '@/lib/actions'
 import { optimizeImageIfLarge } from '@/lib/image-optimize'
 import {
-  estimateImageGenerationCost,
   estimateVideoGenerationCost,
 } from '@/lib/cost-estimate'
-import {
-  getDefaultImageAspectRatio,
-  getDefaultImageResolution,
-  getDefaultImageSize,
-  getImageAspectRatioOptions,
-  getImageResolutionOptions,
-  getImageSizeOptions,
-  IMAGE_BACKGROUND_OPTIONS,
-  IMAGE_OUTPUT_FORMAT_OPTIONS,
-  IMAGE_QUALITY_OPTIONS,
-} from '@/lib/image-model-controls'
 import { useGallery } from '@/stores/gallery'
 import {
-  IMAGE_MODEL_FAMILIES,
   VIDEO_MODEL_FAMILIES,
   getCostTierLabel,
   getVideoAspectRatios,
   getVideoDurations,
   getVideoEffectiveSupports,
   getVideoModes,
-  getImageModelConfig,
   getVideoModelConfig,
   getVideoResolutions,
-  type GeneratedMediaBase,
   type VideoGenerationMode,
 } from '@/types'
 import { CostEstimatePreview } from '@/components/cost-estimate-preview'
@@ -74,18 +57,16 @@ import type {
   KlingElementDraft,
 } from '@/lib/studio-types'
 import {
-  RECRAFT_STYLES,
   VIDEO_RATIOS,
 } from '@/lib/studio-types'
 import {
   getVideoRatioCard,
   getResolutionLabel,
-  getImageSizeCard,
-  getImageAspectRatioCard,
-  fileToDataUrl,
-  getImageStepSettings,
   RatioCard,
+  fileToDataUrl,
 } from '@/lib/studio-helpers'
+import { useImageStudio } from '@/hooks/use-image-studio'
+import { ImageStudioPanel } from '@/components/layout/image-studio-panel'
 
 function createDraftId() {
   return Math.random().toString(36).slice(2, 10)
@@ -114,35 +95,6 @@ export function AppTabs() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [studioMode, setStudioMode] = useState<StudioMode>('image')
   const [mainTab, setMainTab] = useState<MainTab>('gallery')
-
-  const [prompt, setPrompt] = useState('')
-  const [negativePrompt, setNegativePrompt] = useState('')
-  const [imageModel, setImageModelState] = useState('flux/schnell')
-  const setImageModel = (model: string) => {
-    setImageModelState(model)
-    const supports = getImageModelConfig(model)?.supports ?? []
-    const isMulti = supports.includes('reference_images')
-    const hasRef = supports.includes('reference_image') || isMulti
-    if (!hasRef) {
-      setReferenceImages([])
-    } else if (!isMulti && referenceImages.length > 1) {
-      setReferenceImages((current) => current.slice(0, 1))
-    }
-  }
-  const [imageSize, setImageSize] = useState(() => getDefaultImageSize('flux/schnell'))
-  const [imageAspectRatio, setImageAspectRatio] = useState(() => getDefaultImageAspectRatio('flux/schnell'))
-  const [imageResolution, setImageResolution] = useState(() => getDefaultImageResolution('flux/schnell'))
-  const [imageOutputFormat, setImageOutputFormat] = useState('png')
-  const [imageQuality, setImageQuality] = useState('high')
-  const [imageBackground, setImageBackground] = useState('auto')
-  const [seed, setSeed] = useState<number | undefined>()
-  const [numImages, setNumImages] = useState(1)
-  const [guidanceScale, setGuidanceScale] = useState(5)
-  const [numInferenceSteps, setNumInferenceSteps] = useState(20)
-  const [referenceImages, setReferenceImages] = useState<string[]>([])
-  const [imagePromptStrength, setImagePromptStrength] = useState(0.2)
-  const [imageStyle, setImageStyle] = useState('realistic_image')
-  const [imageColors, setImageColors] = useState('')
 
   const [videoSource, setVideoSource] = useState('')
   const [videoPrompt, setVideoPrompt] = useState('')
@@ -174,45 +126,33 @@ export function AppTabs() {
   ])
   const [videoElements, setVideoElements] = useState<KlingElementDraft[]>([])
 
+  const addToGallery = useGallery((state) => state.addWithPersistence)
+  const addPending = useGallery((state) => state.addPending)
+  const removePending = useGallery((state) => state.removePending)
+
   const [loading, setLoading] = useState(false)
 
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<{ setter: (url: string) => void; mediaType: 'image' | 'video' } | null>(null)
-  const [multiPickerOpen, setMultiPickerOpen] = useState(false)
-  const [multiPickerTarget, setMultiPickerTarget] = useState<{ setter: (urls: string[]) => void; current: string[]; max: number } | null>(null)
 
-  const addToGallery = useGallery((state) => state.addWithPersistence)
-  const addPending = useGallery((state) => state.addPending)
-  const removePending = useGallery((state) => state.removePending)
+  const imageStudio = useImageStudio({
+    addToGallery,
+    addPending,
+    removePending,
+    setLoading,
+    openPicker: (setter, mediaType) => {
+      setPickerTarget({ setter, mediaType })
+      setPickerOpen(true)
+    },
+    openMultiPicker: () => {}, // Handled internally by the hook
+  })
 
   function setVideoDuration(value: string) {
     videoDurationRef.current = value
     setVideoDurationState(value)
   }
 
-  const imageSupports = getImageModelConfig(imageModel)?.supports ?? []
   const videoSupports = getVideoEffectiveSupports(videoModel, videoMode)
-
-  const supportsNegative = imageSupports.includes('negative_prompt')
-  const supportsSize = imageSupports.includes('image_size')
-  const supportsImageAspectRatio = imageSupports.includes('aspect_ratio')
-  const supportsImageResolution = imageSupports.includes('resolution')
-  const supportsNumImages = imageSupports.includes('num_images')
-  const supportsImageOutputFormat = imageSupports.includes('output_format')
-  const supportsImageQuality = imageSupports.includes('quality')
-  const supportsImageBackground = imageSupports.includes('background')
-  const supportsGuidance = imageSupports.includes('guidance_scale')
-  const supportsSteps = imageSupports.includes('num_inference_steps')
-  const supportsImageSeed = imageSupports.includes('seed')
-  const supportsImageReference = imageSupports.includes('reference_image') || imageSupports.includes('reference_images')
-  const supportsImageReferences = imageSupports.includes('reference_images')
-  const maxImageReferences = supportsImageReferences ? 3 : 1
-  const supportsImagePromptStrength = imageSupports.includes('image_prompt_strength')
-  const supportsImageStyle = imageSupports.includes('style')
-  const supportsImageColors = imageSupports.includes('colors')
-  const imageSizeOptions = getImageSizeOptions(imageModel)
-  const imageAspectRatioOptions = getImageAspectRatioOptions(imageModel)
-  const imageResolutionOptions = getImageResolutionOptions(imageModel)
 
   const supportsVideoDuration = videoSupports.includes('duration')
   const supportsVideoRatio = videoSupports.includes('aspect_ratio')
@@ -248,14 +188,6 @@ export function AppTabs() {
   const hasVideoVoiceControl = videoElements.some(
     (element) => element.type === 'video' && element.voiceId.trim().length > 0
   )
-  const imageEstimate = estimateImageGenerationCost({
-    model: imageModel,
-    imageSize: supportsSize ? imageSize : undefined,
-    resolution: supportsImageResolution ? imageResolution : undefined,
-    numImages: supportsNumImages ? numImages : 1,
-    style: supportsImageStyle ? imageStyle : undefined,
-  })
-  const imageStepSettings = getImageStepSettings(imageModel)
   const videoEstimate = estimateVideoGenerationCost({
     model: videoModel,
     mode: videoMode,
@@ -268,7 +200,7 @@ export function AppTabs() {
     numFrames: supportsVideoFrames ? videoNumFrames : undefined,
     hasVoiceControl: supportsVideoElements ? hasVideoVoiceControl : undefined,
   })
-  const activeEstimate = studioMode === 'image' ? imageEstimate : videoEstimate
+  const activeEstimate = studioMode === 'image' ? imageStudio.imageEstimate : videoEstimate
   const hasVideoPromptInput = isUsingVideoMultiPrompt
     ? videoMultiPromptShots.some((shot) => shot.prompt.trim().length > 0)
     : videoPrompt.trim().length > 0
@@ -278,43 +210,6 @@ export function AppTabs() {
     const nextMode = videoModeOptions[0]
     if (nextMode) setVideoMode(nextMode)
   }, [videoMode, videoModeOptions])
-
-  useEffect(() => {
-    if (!supportsSteps) return
-    if (
-      numInferenceSteps >= imageStepSettings.min &&
-      numInferenceSteps <= imageStepSettings.max
-    ) {
-      return
-    }
-
-    setNumInferenceSteps(imageStepSettings.defaultValue)
-  }, [
-    imageModel,
-    imageStepSettings.defaultValue,
-    imageStepSettings.max,
-    imageStepSettings.min,
-    numInferenceSteps,
-    supportsSteps,
-  ])
-
-  useEffect(() => {
-    if (!supportsSize) return
-    if (imageSizeOptions.some((option) => option.value === imageSize)) return
-    setImageSize(getDefaultImageSize(imageModel))
-  }, [imageModel, imageSize, imageSizeOptions, supportsSize])
-
-  useEffect(() => {
-    if (!supportsImageAspectRatio) return
-    if (imageAspectRatioOptions.some((option) => option.value === imageAspectRatio)) return
-    setImageAspectRatio(getDefaultImageAspectRatio(imageModel))
-  }, [imageAspectRatio, imageAspectRatioOptions, imageModel, supportsImageAspectRatio])
-
-  useEffect(() => {
-    if (!supportsImageResolution) return
-    if (imageResolutionOptions.some((option) => option.value === imageResolution)) return
-    setImageResolution(getDefaultImageResolution(imageModel))
-  }, [imageModel, imageResolution, imageResolutionOptions, supportsImageResolution])
 
   useEffect(() => {
     if (!supportsVideoDuration) return
@@ -516,146 +411,6 @@ export function AppTabs() {
     })
   }
 
-  async function handleReferenceFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? [])
-    if (!files.length) return
-
-    const remaining = Math.max(0, maxImageReferences - referenceImages.length)
-    if (remaining === 0) {
-      toast.error(`Max ${maxImageReferences} referencia(s)`)
-      e.target.value = ''
-      return
-    }
-
-    try {
-      const nextUrls = await Promise.all(
-        files.slice(0, remaining).map(async (file) => optimizeImageIfLarge(await fileToDataUrl(file), 800))
-      )
-      setReferenceImages((current) => [...current, ...nextUrls].slice(0, maxImageReferences))
-    } catch (error) {
-      toast.error('No se pudieron cargar las referencias')
-      console.error(error)
-    } finally {
-      e.target.value = ''
-    }
-  }
-
-  async function handleGenerateImage() {
-    if (!prompt.trim()) {
-      toast.error('Ingresa un prompt')
-      return
-    }
-
-    const imageConfig = getImageModelConfig(imageModel)
-    let pendingIds = addPending(
-      {
-        type: 'image',
-        prompt,
-        model: `fal-ai/${imageModel}`,
-        costTier: imageConfig?.costTier,
-        metadata: {
-          imageSize: supportsSize ? imageSize : undefined,
-          aspectRatio: supportsImageAspectRatio ? imageAspectRatio : undefined,
-        },
-      },
-      supportsNumImages ? numImages : 1
-    )
-
-    setLoading(true)
-
-    try {
-      const data = await generateImage({
-        prompt,
-        model: `fal-ai/${imageModel}`,
-        negativePrompt: supportsNegative ? (negativePrompt || undefined) : undefined,
-        imageSize: supportsSize ? imageSize : undefined,
-        aspectRatio: supportsImageAspectRatio ? imageAspectRatio : undefined,
-        resolution: supportsImageResolution ? imageResolution : undefined,
-        seed: supportsImageSeed ? seed : undefined,
-        numImages: supportsNumImages ? numImages : 1,
-        outputFormat: supportsImageOutputFormat ? imageOutputFormat : undefined,
-        quality: supportsImageQuality ? imageQuality : undefined,
-        background: supportsImageBackground ? imageBackground : undefined,
-        guidanceScale: supportsGuidance ? guidanceScale : undefined,
-        numInferenceSteps: supportsSteps
-          ? Math.min(Math.max(numInferenceSteps, imageStepSettings.min), imageStepSettings.max)
-          : undefined,
-        imageUrl: supportsImageReference && !supportsImageReferences ? referenceImages[0] : undefined,
-        imageUrlsJson: supportsImageReferences && referenceImages.length > 0 ? JSON.stringify(referenceImages) : undefined,
-        imagePromptStrength:
-          supportsImagePromptStrength && referenceImages[0] ? imagePromptStrength : undefined,
-        style: supportsImageStyle ? imageStyle : undefined,
-        colors: supportsImageColors
-          ? imageColors
-              .split(',')
-              .map((color) => color.trim())
-              .filter(Boolean)
-          : undefined,
-      })
-
-      const urls =
-        data.images?.map((image) => image.url).filter(Boolean) ||
-        (data.image?.url ? [data.image.url] : [])
-
-      if (urls.length === 0) {
-        removePending(pendingIds)
-        pendingIds = []
-        toast.error('No se recibió imagen')
-        return
-      }
-
-      removePending(pendingIds)
-      pendingIds = []
-
-      urls.forEach((url) => {
-        const item: GeneratedMediaBase = {
-          type: 'image',
-          url,
-          prompt,
-          model: `fal-ai/${imageModel}`,
-          costTier: imageConfig?.costTier,
-          metadata: {
-            estimatedCost: imageEstimate?.amount,
-            imageSize: supportsSize ? imageSize : undefined,
-            aspectRatio: supportsImageAspectRatio ? imageAspectRatio : undefined,
-            imageAspectRatio: supportsImageAspectRatio ? imageAspectRatio : undefined,
-            imageResolution: supportsImageResolution ? imageResolution : undefined,
-            imageQuality: supportsImageQuality ? imageQuality : undefined,
-            imageBackground: supportsImageBackground ? imageBackground : undefined,
-            outputFormat: supportsImageOutputFormat ? imageOutputFormat : undefined,
-            seed: supportsImageSeed ? seed : undefined,
-            guidanceScale: supportsGuidance ? guidanceScale : undefined,
-            numInferenceSteps: supportsSteps
-              ? Math.min(Math.max(numInferenceSteps, imageStepSettings.min), imageStepSettings.max)
-              : undefined,
-            referenceCount: supportsImageReference ? Math.min(referenceImages.length, maxImageReferences) : undefined,
-            imagePromptStrength: supportsImagePromptStrength ? imagePromptStrength : undefined,
-            imageStyle: supportsImageStyle ? imageStyle : undefined,
-            imageColors: supportsImageColors
-              ? imageColors
-                  .split(',')
-                  .map((color) => color.trim())
-                  .filter(Boolean)
-              : undefined,
-            costTier: imageConfig?.costTier,
-          },
-        }
-        void addToGallery(item)
-      })
-
-      toast.success(`${urls.length} imagen(es) generada(s)`)
-    } catch (error) {
-      removePending(pendingIds)
-      pendingIds = []
-      toast.error('Error al generar imagen')
-      console.error(error)
-    } finally {
-      if (pendingIds.length > 0) {
-        removePending(pendingIds)
-      }
-      setLoading(false)
-    }
-  }
 
   async function handleGenerateVideo() {
     const trimmedVideoPrompt = videoPrompt.trim()
@@ -918,11 +673,11 @@ export function AppTabs() {
               <div className="flex flex-col items-center gap-3">
                 <CostEstimatePreview estimate={activeEstimate} compact />
                 <Button
-                  onClick={studioMode === 'image' ? handleGenerateImage : handleGenerateVideo}
+                  onClick={studioMode === 'image' ? imageStudio.handleGenerateImage : handleGenerateVideo}
                   disabled={
                     loading ||
                     (studioMode === 'image'
-                      ? !prompt.trim()
+                      ? !imageStudio.prompt.trim()
                       : isAuroraModel
                         ? !videoSource || !videoAudioUrl
                         : (requiresVideoSource && !videoSource) || !hasVideoPromptInput)
@@ -942,415 +697,7 @@ export function AppTabs() {
               <ScrollArea className="min-h-0 flex-1">
                 <div className="space-y-4 p-4">
                   {studioMode === 'image' ? (
-                    <>
-                      <div className="depth-mixed rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                        <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                          Prompt
-                        </Label>
-                        <Textarea
-                          className="mt-3 min-h-36 rounded-3xl border border-secondary/20 bg-slate-950/80 text-white shadow-none"
-                          placeholder="Describe your image..."
-                          value={prompt}
-                          onChange={(e) => setPrompt(e.target.value)}
-                        />
-                        {supportsNegative ? (
-                          <Textarea
-                            className="mt-3 min-h-20 rounded-3xl border border-primary/20 bg-slate-950/80 text-white shadow-none"
-                             placeholder="Prompt negativo..."
-                            value={negativePrompt}
-                            onChange={(e) => setNegativePrompt(e.target.value)}
-                          />
-                        ) : null}
-                      </div>
-
-                      {supportsImageReference ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <div className="mb-3 flex items-center justify-between">
-                            <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                              {supportsImageReferences ? 'Referencias' : 'Referencia'}
-                            </Label>
-                            <Badge variant="secondary" className="depth-secondary border border-secondary/25 bg-secondary/10 text-secondary-tint">
-                              {Math.min(referenceImages.length, maxImageReferences)}/{maxImageReferences}
-                            </Badge>
-                          </div>
-
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <label className="depth-secondary flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-secondary/25 bg-slate-950/75 px-4 py-4 text-sm text-slate-300">
-                              <ImagePlus className="h-4 w-4 text-secondary-tint" />
-                              {supportsImageReferences ? 'Add references' : 'Add reference'}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple={supportsImageReferences}
-                                className="hidden"
-                                onChange={handleReferenceFileChange}
-                              />
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setMultiPickerTarget({
-                                  setter: (urls) => setReferenceImages((current) => [...current, ...urls].slice(0, maxImageReferences)),
-                                  current: referenceImages,
-                                  max: maxImageReferences,
-                                })
-                                setMultiPickerOpen(true)
-                              }}
-                              className="depth-secondary flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-primary/25 bg-primary/5 px-4 py-4 text-sm text-primary/80 transition hover:border-primary/50 hover:bg-primary/10"
-                            >
-                              <ImageIcon className="h-4 w-4 text-primary/60" />
-                              De la galería
-                            </button>
-                          </div>
-
-                          {referenceImages.length > 0 ? (
-                            <div className={`mt-3 ${supportsImageReferences ? 'grid grid-cols-3 gap-2' : ''}`}>
-                              {referenceImages.slice(0, maxImageReferences).map((url, index) => (
-                                <div
-                                  key={`ref-${index}`}
-                                  className="depth-mixed relative overflow-hidden rounded-2xl border border-secondary/20 bg-slate-950/80"
-                                >
-                                  <div className={supportsImageReferences ? 'relative aspect-square' : 'relative aspect-video'}>
-                                    <Image
-                                      src={url}
-                                      alt={`Reference ${index + 1}`}
-                                      fill
-                                      className="object-cover"
-                                      unoptimized
-                                    />
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => setReferenceImages((current) => current.filter((_, i) => i !== index))}
-                                    className="depth-primary absolute right-2 top-2 rounded-full border border-primary/20 bg-primary/15 px-2 py-1 text-[0.65rem] font-semibold text-primary-tint"
-                                  >
-                                    Eliminar
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
-
-                      {supportsImagePromptStrength ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                              Fuerza de referencia
-                            </Label>
-                            <span className="text-sm text-primary-tint">{imagePromptStrength.toFixed(2)}</span>
-                          </div>
-                          <Slider
-                            className="mt-4"
-                            value={[imagePromptStrength]}
-                            onValueChange={([value]) => setImagePromptStrength(value)}
-                            min={0}
-                            max={1}
-                            step={0.05}
-                          />
-                        </div>
-                      ) : null}
-
-                      <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                            Models
-                          </Label>
-                          <Badge variant="secondary" className="depth-secondary border border-secondary/25 bg-secondary/10 text-secondary-tint">
-                            {Object.keys(IMAGE_MODEL_FAMILIES).length} familias
-                          </Badge>
-                        </div>
-                        <div className="space-y-3">
-                          {Object.entries(IMAGE_MODEL_FAMILIES).map(([familyId, family]) => (
-                            <div key={familyId} className="rounded-2xl border border-secondary/15 bg-slate-950/55 p-2">
-                              <div className="mb-2 flex items-center justify-between px-2">
-                                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                                  {family.name}
-                                </span>
-                                <span className="text-xs text-secondary-tint">{Object.keys(family.models).length}</span>
-                              </div>
-                              <div className="space-y-2">
-                                {Object.entries(family.models).map(([modelId, config]) => (
-                                  <button
-                                    key={modelId}
-                                    type="button"
-                                    onClick={() => setImageModel(modelId)}
-                                    className={`w-full rounded-2xl border px-3 py-3 text-left transition ${
-                                      imageModel === modelId
-                                        ? 'depth-primary border-primary/35 bg-primary/10 text-white'
-                                        : 'depth-secondary border-secondary/15 bg-slate-950/70 text-slate-300'
-                                    }`}
-                                  >
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div>
-                                        <span className="block text-sm font-semibold">{config.name}</span>
-                                        <span className="block text-xs text-slate-400">{family.name}</span>
-                                      </div>
-                                      {getCostTierLabel(config.costTier) && (
-                                        <span className="text-xs text-slate-400">
-                                          {getCostTierLabel(config.costTier)}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {supportsSize ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                            Aspect Ratio
-                          </Label>
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            {imageSizeOptions.map((size) => {
-                              const card = getImageSizeCard(size.value, size.label)
-                              return (
-                                <RatioCard
-                                  key={size.value}
-                                  active={imageSize === size.value}
-                                  frameClass={card.frameClass}
-                                  label={card.label}
-                                  onClick={() => setImageSize(size.value)}
-                                />
-                              )
-                            })}
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {supportsImageAspectRatio ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                            Frame
-                          </Label>
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            {imageAspectRatioOptions.map((ratio) => {
-                              const card = getImageAspectRatioCard(ratio.value)
-                              return (
-                                <RatioCard
-                                  key={ratio.value}
-                                  active={imageAspectRatio === ratio.value}
-                                  frameClass={card.frameClass}
-                                  label={card.label}
-                                  onClick={() => setImageAspectRatio(ratio.value)}
-                                />
-                              )
-                            })}
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {supportsImageResolution ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                            Resolution
-                          </Label>
-                          <div className="mt-3 grid grid-cols-3 gap-2">
-                            {imageResolutionOptions.map((option) => (
-                              <button
-                                key={option.value}
-                                type="button"
-                                onClick={() => setImageResolution(option.value)}
-                                className={`rounded-2xl border px-3 py-2 text-sm transition ${
-                                  imageResolution === option.value
-                                    ? 'depth-primary border-primary/35 bg-primary/10 text-white'
-                                    : 'border-secondary/15 bg-slate-950/70 text-slate-300'
-                                }`}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {supportsImageStyle ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                            Estilo
-                          </Label>
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            {RECRAFT_STYLES.map((style) => (
-                              <button
-                                key={style.value}
-                                type="button"
-                                onClick={() => setImageStyle(style.value)}
-                                className={`rounded-2xl border px-3 py-2 text-sm transition ${
-                                  imageStyle === style.value
-                                    ? 'depth-primary border-primary/35 bg-primary/10 text-white'
-                                    : 'border-secondary/15 bg-slate-950/70 text-slate-300'
-                                }`}
-                              >
-                                {style.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {supportsImageColors ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                            Colores
-                          </Label>
-                          <Textarea
-                            className="mt-3 min-h-20 rounded-3xl border border-secondary/20 bg-slate-950/80 text-white shadow-none"
-                            placeholder="#FF6B6B, #1A73E8"
-                            value={imageColors}
-                            onChange={(e) => setImageColors(e.target.value)}
-                          />
-                        </div>
-                      ) : null}
-
-                      {supportsImageOutputFormat ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                            Output
-                          </Label>
-                          <Select value={imageOutputFormat} onValueChange={setImageOutputFormat}>
-                            <SelectTrigger className="depth-secondary mt-3 border border-secondary/20 bg-slate-900/70 text-white">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {IMAGE_OUTPUT_FORMAT_OPTIONS.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : null}
-
-                      {supportsImageQuality ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                            Quality
-                          </Label>
-                          <Select value={imageQuality} onValueChange={setImageQuality}>
-                            <SelectTrigger className="depth-secondary mt-3 border border-secondary/20 bg-slate-900/70 text-white">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {IMAGE_QUALITY_OPTIONS.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : null}
-
-                      {supportsImageBackground ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                            Background
-                          </Label>
-                          <Select value={imageBackground} onValueChange={setImageBackground}>
-                            <SelectTrigger className="depth-secondary mt-3 border border-secondary/20 bg-slate-900/70 text-white">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {IMAGE_BACKGROUND_OPTIONS.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : null}
-
-                      {supportsNumImages ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                               Lote
-                            </Label>
-                            <span className="text-sm text-primary-tint">{numImages}</span>
-                          </div>
-                          <Slider
-                            className="mt-4"
-                            value={[numImages]}
-                            onValueChange={([value]) => setNumImages(value)}
-                            min={1}
-                            max={4}
-                            step={1}
-                          />
-                        </div>
-                      ) : null}
-
-                      {supportsGuidance ? (
-                        <div className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                               Guía
-                            </Label>
-                            <span className="text-sm text-primary-tint">{guidanceScale}</span>
-                          </div>
-                          <Slider
-                            className="mt-4"
-                            value={[guidanceScale]}
-                            onValueChange={([value]) => setGuidanceScale(value)}
-                            min={1}
-                            max={20}
-                            step={0.5}
-                          />
-                        </div>
-                      ) : null}
-
-                      <details className="depth-secondary rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
-                        <summary className="cursor-pointer list-none text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-secondary-tint">
-                           Avanzado
-                        </summary>
-                        <div className="mt-4 space-y-4">
-                          {supportsImageSeed ? (
-                            <div>
-                              <div className="flex items-center justify-between">
-                                <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                                 Semilla
-                              </Label>
-                              <button
-                                type="button"
-                                className="text-xs font-semibold text-primary-tint"
-                                onClick={() => setSeed(Math.floor(Math.random() * 999999))}
-                              >
-                                 Aleatorio
-                              </button>
-                            </div>
-                              <div className="depth-mixed mt-3 rounded-2xl border border-primary/20 bg-slate-950/80 px-3 py-2 text-sm text-white">
-                                {seed ?? 'Auto'}
-                              </div>
-                            </div>
-                          ) : null}
-
-                          {supportsSteps ? (
-                            <div>
-                              <div className="flex items-center justify-between">
-                                <Label className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                                   Pasos
-                                </Label>
-                                <span className="text-sm text-primary-tint">{numInferenceSteps}</span>
-                              </div>
-                              <Slider
-                                className="mt-4"
-                                value={[numInferenceSteps]}
-                                onValueChange={([value]) => setNumInferenceSteps(value)}
-                                min={imageStepSettings.min}
-                                max={imageStepSettings.max}
-                                step={1}
-                              />
-                            </div>
-                          ) : null}
-                        </div>
-                      </details>
-                    </>
+                    <ImageStudioPanel {...imageStudio} />
                   ) : (
                     <>
                       {isAuroraModel ? (
@@ -2314,11 +1661,11 @@ export function AppTabs() {
                   className="mb-3 border-primary/15 bg-slate-950/60"
                 />
                 <Button
-                  onClick={studioMode === 'image' ? handleGenerateImage : handleGenerateVideo}
+                  onClick={studioMode === 'image' ? imageStudio.handleGenerateImage : handleGenerateVideo}
                   disabled={
                     loading ||
                     (studioMode === 'image'
-                      ? !prompt.trim()
+                      ? !imageStudio.prompt.trim()
                       : isAuroraModel
                         ? !videoSource || !videoAudioUrl
                         : (requiresVideoSource && !videoSource) || !hasVideoPromptInput)
@@ -2353,19 +1700,19 @@ export function AppTabs() {
       }}
     />
     <GalleryPicker
-      open={multiPickerOpen}
-      onOpenChange={setMultiPickerOpen}
+      open={imageStudio.multiPickerOpen}
+      onOpenChange={imageStudio.setMultiPickerOpen}
       mediaType="image"
       multiple
-      maxSelection={multiPickerTarget ? multiPickerTarget.max - multiPickerTarget.current.length : 3}
+      maxSelection={imageStudio.multiPickerTarget ? imageStudio.multiPickerTarget.max - imageStudio.multiPickerTarget.current.length : 3}
       onSelect={(url, _item) => {
-        if (multiPickerTarget) {
-          const remaining = multiPickerTarget.max - multiPickerTarget.current.length
+        if (imageStudio.multiPickerTarget) {
+          const remaining = imageStudio.multiPickerTarget.max - imageStudio.multiPickerTarget.current.length
           if (remaining <= 0) {
-            toast.error(`Máximo ${multiPickerTarget.max} referencias`)
+            toast.error(`Máximo ${imageStudio.multiPickerTarget.max} referencias`)
             return
           }
-          multiPickerTarget.setter([...multiPickerTarget.current, url].slice(0, multiPickerTarget.max))
+          imageStudio.multiPickerTarget.setter([...imageStudio.multiPickerTarget.current, url].slice(0, imageStudio.multiPickerTarget.max))
         }
       }}
     />
