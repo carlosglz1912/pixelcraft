@@ -1,0 +1,29 @@
+src/types/index.ts
+  27a51a7f10b26b0f 73-74
+src/app/globals.css
+  27a51a7f10b26b0f 209-224
+src/components/ui/skeleton.tsx
+  27a51a7f10b26b0f 13-23
+src/stores/gallery.ts
+  27a51a7f10b26b0f 24-25,246,266-279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "be50326135759f1bcce5919d547475ee9dfd95e9",
+  "prompts": {
+    "27a51a7f10b26b0f": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "5aef2070-48a4-4d27-8e88-ad36c6f1ae26",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 46,
+      "total_deletions": 1,
+      "accepted_lines": 46,
+      "overriden_lines": 0
+    }
+  }
+}
