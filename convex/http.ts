@@ -94,4 +94,83 @@ http.route({
   }),
 });
 
+http.route({
+  path: "/api/collections/list",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const userId = url.searchParams.get("userId");
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "userId is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    const result = await ctx.runQuery(api.collections.listByUser, { userId });
+    return new Response(JSON.stringify(result), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
+http.route({
+  path: "/api/collections/create",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json() as Record<string, unknown>;
+    const result = await ctx.runMutation(api.collections.create, body as any);
+    return new Response(JSON.stringify({ id: result }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
+http.route({
+  path: "/api/collections/update",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json() as Record<string, unknown>;
+    const result = await ctx.runMutation(api.collections.update, body as any);
+    return new Response(JSON.stringify(result), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
+http.route({
+  path: "/api/collections/addItems",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json() as Record<string, unknown>;
+    const result = await ctx.runMutation(api.collections.addItems, body as any);
+    return new Response(JSON.stringify(result), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
+http.route({
+  path: "/api/collections/removeItems",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json() as Record<string, unknown>;
+    const result = await ctx.runMutation(api.collections.removeItems, body as any);
+    return new Response(JSON.stringify(result), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
+http.route({
+  path: "/api/collections/delete",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json() as { id: string };
+    const result = await ctx.runMutation(api.collections.remove, { id: body.id as any });
+    return new Response(JSON.stringify(result), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
 export default http;
