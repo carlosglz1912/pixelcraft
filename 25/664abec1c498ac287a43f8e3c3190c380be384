@@ -1,0 +1,23 @@
+src/components/features/collections.tsx
+  1c4991477bdf7be8 43,133,141,147-148,218-222,275-282,820
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "25664abec1c498ac287a43f8e3c3190c380be384",
+  "prompts": {
+    "1c4991477bdf7be8": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "418e6391-3551-47ce-9de4-cbb2f6912fa9",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 19,
+      "total_deletions": 4,
+      "accepted_lines": 19,
+      "overriden_lines": 0
+    }
+  }
+}
