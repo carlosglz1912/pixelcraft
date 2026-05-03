@@ -1,0 +1,23 @@
+src/components/layout/app-tabs.tsx
+  1b828794004cbee0 31-32,34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "368c000771fd0e240174a602a5e93357338bff10",
+  "prompts": {
+    "1b828794004cbee0": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "9c961b39-1cc5-4be8-b99b-08b736b4259a",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 1,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    }
+  }
+}
