@@ -1,0 +1,29 @@
+src/components/layout/app-tabs.tsx
+  bf11f818ab71e155 30,46,56
+src/hooks/use-video-studio.ts
+  bf11f818ab71e155 60,69
+src/components/features/gallery.tsx
+  bf11f818ab71e155 67-69,173-225,244-245,351-355,369,387,401,407,700-706
+src/hooks/use-image-studio.ts
+  bf11f818ab71e155 23,33,220,267
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "36d2bd9eaafa5591a714b70994a7fc1a7126f7ae",
+  "prompts": {
+    "bf11f818ab71e155": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "9b64a7e9-7d49-4cec-b44d-d166835a7d70",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 83,
+      "total_deletions": 15,
+      "accepted_lines": 83,
+      "overriden_lines": 0
+    }
+  }
+}
