@@ -28,8 +28,10 @@ export function AppTabs() {
   const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false)
 
   // Responsive breakpoints — default to false for SSR hydration consistency
+  // Each hook must be called unconditionally to satisfy Rules of Hooks
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
   const isMobile = !useMediaQuery('(min-width: 640px)')
-  const isTablet = useMediaQuery('(min-width: 640px)') && !useMediaQuery('(min-width: 1024px)')
+  const isTablet = !isMobile && !isDesktop
 
   // Sync responsive state on viewport changes
   useEffect(() => {
