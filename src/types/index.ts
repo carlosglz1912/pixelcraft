@@ -131,6 +131,17 @@ export interface Collection {
   updatedAt: Date
 }
 
+export const COLLECTION_COLORS: Record<CollectionColor, { value: CollectionColor; label: string; bg: string; border: string; dot: string }> = {
+  red:    { value: 'red',    label: 'Rojo',    bg: 'bg-red-500/15',    border: 'border-red-500/30',    dot: 'bg-red-500' },
+  orange: { value: 'orange', label: 'Naranja', bg: 'bg-orange-500/15', border: 'border-orange-500/30', dot: 'bg-orange-500' },
+  yellow: { value: 'yellow', label: 'Amarillo', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30', dot: 'bg-yellow-500' },
+  green:  { value: 'green',  label: 'Verde',   bg: 'bg-green-500/15',  border: 'border-green-500/30',  dot: 'bg-green-500' },
+  blue:   { value: 'blue',   label: 'Azul',    bg: 'bg-blue-500/15',   border: 'border-blue-500/30',   dot: 'bg-blue-500' },
+  purple: { value: 'purple', label: 'Púrpura', bg: 'bg-purple-500/15', border: 'border-purple-500/30', dot: 'bg-purple-500' },
+  pink:   { value: 'pink',   label: 'Rosa',    bg: 'bg-pink-500/15',   border: 'border-pink-500/30',   dot: 'bg-pink-500' },
+  gray:   { value: 'gray',   label: 'Gris',    bg: 'bg-slate-500/15',  border: 'border-slate-500/30',  dot: 'bg-slate-500' },
+}
+
 export function getCostTierLabel(costTier?: CostTier): string | null {
   if (!costTier) return null
   if (costTier === 'free') return 'Gratis'

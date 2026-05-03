@@ -4,7 +4,7 @@
  */
 
 export type StudioMode = 'image' | 'video'
-export type MainTab = 'gallery' | 'storage'
+export type MainTab = 'gallery' | 'storage' | 'collections'
 
 export const RECRAFT_STYLES = [
   { value: 'realistic_image', label: 'Realistic' },

@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   Copy,
   ImagePlus,
+  FolderOpen,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -55,7 +56,7 @@ interface DuplicateGroup {
 }
 
 interface R2ManagerProps {
-  onSwitchTab?: (tab: 'gallery' | 'storage') => void
+  onSwitchTab?: (tab: 'gallery' | 'storage' | 'collections') => void
 }
 
 export function R2Manager({ onSwitchTab }: R2ManagerProps) {
@@ -163,6 +164,16 @@ export function R2Manager({ onSwitchTab }: R2ManagerProps) {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
+          {onSwitchTab && (
+            <button
+              type="button"
+              onClick={() => onSwitchTab('collections')}
+              className="depth-secondary rounded-2xl border border-secondary/15 bg-secondary/10 px-3 py-1.5 text-xs font-medium text-secondary-tint transition hover:bg-secondary/15 hover:text-white"
+            >
+              <FolderOpen className="mr-1.5 inline h-3 w-3" />
+              Colecciones
+            </button>
+          )}
           {onSwitchTab && (
             <button
               type="button"

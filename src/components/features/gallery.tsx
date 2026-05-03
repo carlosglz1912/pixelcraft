@@ -56,6 +56,7 @@ import {
   Expand,
   Image as ImageIcon,
   Sparkles,
+  FolderOpen,
   Trash2,
   Video,
   Clock,
@@ -224,7 +225,7 @@ function FailedGalleryCard({ item }: { item: PendingMedia }) {
 }
 
 interface GalleryProps {
-  onSwitchTab?: (tab: 'gallery' | 'storage') => void
+  onSwitchTab?: (tab: 'gallery' | 'storage' | 'collections') => void
 }
 
 export function Gallery({ onSwitchTab }: GalleryProps) {
@@ -641,7 +642,17 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
                   Tipo
                 </button>
               </div>
-              {onSwitchTab && (
+               {onSwitchTab && (
+               <button
+                 type="button"
+                 onClick={() => onSwitchTab('collections')}
+                 className="depth-secondary rounded-2xl border border-secondary/15 bg-secondary/10 px-3 py-1.5 text-xs font-medium text-secondary-tint transition hover:bg-secondary/15 hover:text-white"
+               >
+                 <FolderOpen className="mr-1.5 inline h-3 w-3" />
+                 Colecciones
+               </button>
+             )}
+             {onSwitchTab && (
                <button
                  type="button"
                  onClick={() => onSwitchTab('storage')}

@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Gallery } from '@/components/features/gallery'
 import { GalleryPicker } from '@/components/gallery-picker'
 import { R2Manager } from '@/components/features/r2-manager'
+import { Collections } from '@/components/features/collections'
 import { useGallery } from '@/stores/gallery'
 import type { StudioMode, MainTab } from '@/lib/studio-types'
 import { useImageStudio } from '@/hooks/use-image-studio'
@@ -200,7 +201,7 @@ export function AppTabs() {
               <Menu className="h-5 w-5" />
             </button>
           )}
-          {mainTab === 'gallery' ? <Gallery onSwitchTab={setMainTab} /> : <R2Manager onSwitchTab={setMainTab} />}
+          {mainTab === 'gallery' ? <Gallery onSwitchTab={setMainTab} /> : mainTab === 'collections' ? <Collections onSwitchTab={setMainTab} /> : <R2Manager onSwitchTab={setMainTab} />}
         </section>
       </div>
     </LayoutGroup>
