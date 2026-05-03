@@ -110,6 +110,27 @@ export type OperationType = 'text-to-image' | 'image-to-video' | 'edit-image' | 
 
 export type CostTier = 'free' | 'low' | 'medium' | 'high' | 'premium'
 
+export type CollectionColor =
+  | 'red'
+  | 'orange'
+  | 'yellow'
+  | 'green'
+  | 'blue'
+  | 'purple'
+  | 'pink'
+  | 'gray'
+
+export interface Collection {
+  id: string
+  name: string
+  description?: string
+  itemIds: string[]
+  coverImageId?: string
+  color: CollectionColor
+  createdAt: Date
+  updatedAt: Date
+}
+
 export function getCostTierLabel(costTier?: CostTier): string | null {
   if (!costTier) return null
   if (costTier === 'free') return 'Gratis'
