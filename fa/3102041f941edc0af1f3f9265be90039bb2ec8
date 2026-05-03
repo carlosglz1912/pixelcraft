@@ -1,0 +1,29 @@
+src/components/layout/studio-mode-selector.tsx
+  fd94eb7177f3c33e 26,48
+src/components/features/gallery.tsx
+  fd94eb7177f3c33e 205
+src/components/layout/sidebar-footer.tsx
+  fd94eb7177f3c33e 30
+src/components/cost-estimate-preview.tsx
+  fd94eb7177f3c33e 81,83,86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "fa3102041f941edc0af1f3f9265be90039bb2ec8",
+  "prompts": {
+    "fd94eb7177f3c33e": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "f8b368a2-0373-4519-bf8e-519ef4384a0b",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 7,
+      "total_deletions": 7,
+      "accepted_lines": 7,
+      "overriden_lines": 0
+    }
+  }
+}
