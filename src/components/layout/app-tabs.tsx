@@ -122,7 +122,7 @@ export function AppTabs() {
   const sidebarContent = (
     <>
       <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-secondary/0 via-secondary/80 to-secondary/0" />
-      <div className="flex h-full flex-col">
+      <div className="flex min-h-0 h-full flex-col">
         <SidebarHeader
           sidebarCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
@@ -157,7 +157,7 @@ export function AppTabs() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit="exit"
-              className="flex flex-1 flex-col"
+              className="flex min-h-0 flex-1 flex-col"
             >
               <ScrollArea className="min-h-0 flex-1">
                 <div className="space-y-4 p-4">
@@ -182,7 +182,7 @@ export function AppTabs() {
       <div className={`grid min-h-screen ${layoutClass}`}>
         {/* Inline sidebar — hidden on mobile (rendered as overlay drawer instead) */}
         {!isMobile && (
-          <motion.aside layout transition={{ ...SIDEBAR_SPRING }} className="depth-secondary relative h-screen h-[100dvh] border-r border-secondary/30 bg-slate-950/96">
+          <motion.aside layout transition={{ ...SIDEBAR_SPRING }} className="depth-secondary relative h-screen h-[100dvh] overflow-hidden border-r border-secondary/30 bg-slate-950/96">
             {sidebarContent}
           </motion.aside>
         )}
