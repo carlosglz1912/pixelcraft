@@ -1,0 +1,27 @@
+src/components/layout/app-tabs.tsx
+  c3e7586fcb2af20b 69-88
+src/lib/studio-helpers.tsx
+  c3e7586fcb2af20b 1-108
+src/lib/studio-types.ts
+  c3e7586fcb2af20b 1-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "8b29af573fc19f7f799adba7ad9fc5412bbdcbd7",
+  "prompts": {
+    "c3e7586fcb2af20b": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "550505b1-71ce-4a32-ac2b-81650fa4c8f2",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 172,
+      "overriden_lines": 0
+    }
+  }
+}
