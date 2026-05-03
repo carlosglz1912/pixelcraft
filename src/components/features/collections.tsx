@@ -40,7 +40,7 @@ import {
 import { toast } from 'sonner'
 import { AnimatePresence, motion, galleryItemVariants } from '@/lib/motion'
 import { getCollectionItems, calculateCollectionCost } from '@/lib/collection-cost'
-import { formatCostEstimateMxn } from '@/lib/cost-estimate'
+import { formatCostEstimate, formatCostEstimateMxn } from '@/lib/cost-estimate'
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -130,6 +130,7 @@ function CollectionCard({
   collection,
   itemCount,
   coverUrl,
+  galleryItems,
   onEdit,
   onDelete,
   onClick,
@@ -137,11 +138,14 @@ function CollectionCard({
   collection: Collection
   itemCount: number
   coverUrl: string | null
+  galleryItems: GeneratedMedia[]
   onEdit: () => void
   onDelete: () => void
   onClick: () => void
 }) {
   const colorConfig = COLLECTION_COLORS[collection.color] ?? COLLECTION_COLORS.blue
+  const items = getCollectionItems(galleryItems, collection)
+  const { totalUsd, totalMxn } = calculateCollectionCost(items)
 
   return (
     <motion.div
@@ -211,6 +215,11 @@ function CollectionCard({
             <Badge variant="secondary" className="depth-secondary border border-secondary/20 bg-secondary/10 text-xs text-secondary-tint">
               {itemCount} {itemCount === 1 ? 'elemento' : 'elementos'}
             </Badge>
+            {totalUsd > 0 && (
+              <Badge variant="secondary" className="depth-primary border border-primary/20 bg-primary/10 text-primary-tint text-xs">
+                {formatCostEstimate(totalUsd)} <span className="mx-0.5 opacity-50">·</span> {formatCostEstimateMxn(totalMxn)}
+              </Badge>
+            )}
           </div>
         </div>
       </button>
@@ -263,9 +272,14 @@ function CollectionDetail({
             {items.length} {items.length === 1 ? 'elemento' : 'elementos'}
           </Badge>
           {totalUsd > 0 && (
-            <Badge variant="secondary" className="depth-primary border border-primary/20 bg-primary/10 text-primary-tint">
-              {formatCostEstimateMxn(totalMxn)}
-            </Badge>
+            <>
+              <Badge variant="secondary" className="depth-primary border border-primary/20 bg-primary/10 text-primary-tint">
+                {formatCostEstimate(totalUsd)} USD
+              </Badge>
+              <Badge variant="secondary" className="depth-primary border border-primary/20 bg-primary/10 text-primary-tint">
+                {formatCostEstimateMxn(totalMxn)}
+              </Badge>
+            </>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -803,6 +817,7 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
                     collection={collection}
                     itemCount={collection.itemIds.length}
                     coverUrl={getCoverUrl(collection)}
+                    galleryItems={galleryItems}
                     onEdit={() => handleOpenEdit(collection)}
                     onDelete={() => setDeleteTarget(collection)}
                     onClick={() => handleOpenDetail(collection)}
