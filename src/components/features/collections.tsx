@@ -567,6 +567,7 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
 
   // Store
   const collections = useCollections((s) => s.collections)
+  const isLoading = useCollections((s) => s.isLoading)
   const createCollection = useCollections((s) => s.create)
   const updateCollection = useCollections((s) => s.update)
   const removeCollection = useCollections((s) => s.remove)
@@ -779,7 +780,19 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
         </div>
 
         {/* Content area */}
-        {collections.length === 0 ? (
+        {isLoading && collections.length === 0 ? (
+          <div className="flex min-h-[calc(100dvh-10rem)] flex-1 items-center justify-center p-8">
+            <div className="depth-mixed max-w-md rounded-[2rem] border border-dashed border-secondary/15 bg-slate-900/70 px-12 py-16 text-center">
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+              </div>
+              <p className="text-lg font-semibold text-white">Cargando colecciones</p>
+              <p className="mt-3 text-sm text-slate-400">
+                Sincronizando con el servidor...
+              </p>
+            </div>
+          </div>
+        ) : collections.length === 0 ? (
           <div className="flex min-h-[calc(100dvh-10rem)] flex-1 items-center justify-center p-8">
             <div className="depth-mixed max-w-md rounded-[2rem] border border-dashed border-secondary/15 bg-slate-900/70 px-12 py-16 text-center">
               <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 via-primary/10 to-transparent">
