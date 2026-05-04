@@ -1,0 +1,25 @@
+src/stores/collections.ts
+  db867c3bd864cd62 2,4,6,8,23,52-55,60-61,68,85-93,95-152,157-168,170-189,193-206,208-218,220-313
+src/components/features/collections.tsx
+  db867c3bd864cd62 573-574,579,581-583,631,635-638
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "c08b59a95c24a5d1bfe24404fdff4660803e8bee",
+  "prompts": {
+    "db867c3bd864cd62": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "33a55cbf-f077-4e5c-89db-c163119c1e58",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 246,
+      "total_deletions": 306,
+      "accepted_lines": 241,
+      "overriden_lines": 0
+    }
+  }
+}
