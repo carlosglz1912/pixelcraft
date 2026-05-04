@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "ea17b3a8d376019c61405cd81858a3fce5a5a9a0",
+  "prompts": {
+    "5cdcf9855346669a": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "e0444fea-e244-4959-befc-0ad7991b3fbd",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 119,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
