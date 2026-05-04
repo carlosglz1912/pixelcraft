@@ -342,28 +342,3 @@ export async function listPersistedMedia(limit = 50, userId?: string) {
   }
 }
 
-export async function deletePersistedMedia(id: string) {
-  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
-  
-  if (!convexUrl) {
-    return { success: false }
-  }
-
-  try {
-    const convexSiteUrl = convexUrl.replace('.cloud', '.site')
-    const response = await fetch(`${convexSiteUrl}/api/media/delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
-    
-    if (!response.ok) {
-      throw new Error(`Failed to delete media: ${response.status}`)
-    }
-
-    return response.json()
-  } catch (error) {
-    console.error('Failed to delete persisted media:', error)
-    return { success: false }
-  }
-}
