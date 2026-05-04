@@ -1,41 +1,11 @@
 import { create } from 'zustand'
-import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
+import type { Id } from '../../convex/_generated/dataModel'
 import type { Collection, CollectionColor } from '@/types'
+import { getConvexClient } from '@/lib/convex-client'
 import { getUserId } from '@/lib/user'
+import { api } from '../../convex/_generated/api'
 
-// ── Storage with QuotaExceededError handling ───────────────────────
-
-const collectionsStorage: StateStorage = {
-  getItem: (name: string) => {
-    if (typeof window === 'undefined') return null
-    return window.localStorage.getItem(name)
-  },
-  setItem: (name: string, value: string) => {
-    if (typeof window === 'undefined') return
-    try {
-      window.localStorage.setItem(name, value)
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        console.warn('[collections.persist] Local storage quota exceeded; skipping persistence update.', error)
-        return
-      }
-      throw error
-    }
-  },
-  removeItem: (name: string) => {
-    if (typeof window === 'undefined') return
-    window.localStorage.removeItem(name)
-  },
-}
-
-// ── Convex API helpers ─────────────────────────────────────────────
-
-function getConvexSiteUrl(): string | null {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL
-  if (!url) return null
-  // Convert wss://xxx.convex.cloud to https://xxx.convex.site
-  return url.replace('wss://', 'https://').replace('.convex.cloud', '.convex.site')
-}
+// ── Convex document → local Collection mapping ─────────────────────
 
 interface ConvexCollection {
   _id: string
@@ -50,7 +20,7 @@ interface ConvexCollection {
   userId?: string
 }
 
-function convexToLocal(cc: ConvexCollection): Collection {
+function convexDocToCollection(cc: ConvexCollection): Collection {
   return {
     id: cc._id,
     name: cc.name,
@@ -79,19 +49,23 @@ function validateDescription(description: string | undefined): string | undefine
   return description.trim().slice(0, MAX_DESCRIPTION_LENGTH) || undefined
 }
 
+// ── Module-scoped subscription handle ──────────────────────────────
+
+let _unsubscribe: (() => void) | null = null
+
 // ── Store interface ────────────────────────────────────────────────
 
 interface CollectionsState {
   collections: Collection[]
-  isSyncing: boolean
-  hydratedFromConvex: boolean
+  isLoading: boolean
+  error: string | null
 
   create(data: {
     name: string
     description?: string
     color?: CollectionColor
     coverImageId?: string
-  }): string
+  }): Promise<string>
 
   update(
     id: string,
@@ -108,269 +82,232 @@ interface CollectionsState {
 
   getCollectionsForItem(itemId: string): Collection[]
 
-  hydrateFromConvex(): Promise<void>
+  init(): void
 
-  syncToConvex(): Promise<void>
+  cleanup(): void
+}
+
+// ── Migration helper ───────────────────────────────────────────────
+
+const MIGRATION_FLAG = 'pixelcraft-collections-migrated'
+const OLD_STORAGE_KEY = 'pixelcraft-collections'
+
+interface LegacyPersistedCollection {
+  id: string
+  name: string
+  description?: string
+  itemIds: string[]
+  coverImageId?: string
+  color: CollectionColor
+  createdAt: string
+  updatedAt: string
+}
+
+async function runMigrationIfNeeded(client: NonNullable<ReturnType<typeof getConvexClient>>): Promise<void> {
+  if (typeof window === 'undefined') return
+
+  const alreadyMigrated = localStorage.getItem(MIGRATION_FLAG)
+  if (alreadyMigrated) return
+
+  const raw = localStorage.getItem(OLD_STORAGE_KEY)
+  if (!raw) {
+    // No old data — just mark as migrated
+    localStorage.setItem(MIGRATION_FLAG, 'true')
+    return
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as { state?: { collections?: LegacyPersistedCollection[] } }
+    const oldCollections = parsed?.state?.collections ?? []
+
+    if (!Array.isArray(oldCollections) || oldCollections.length === 0) {
+      localStorage.setItem(MIGRATION_FLAG, 'true')
+      return
+    }
+
+    const userId = getUserId()
+
+    for (const c of oldCollections) {
+      try {
+        await client.mutation(api.collections.create, {
+          name: c.name,
+          description: c.description,
+          color: c.color,
+          itemIds: c.itemIds ?? [],
+          coverImageId: c.coverImageId,
+          userId,
+        })
+      } catch (err) {
+        console.warn('[collections] Migration: failed to migrate collection', c.id, err)
+      }
+    }
+
+    localStorage.setItem(MIGRATION_FLAG, 'true')
+    // Clear old localStorage data — Convex is now the source of truth
+    localStorage.removeItem(OLD_STORAGE_KEY)
+  } catch (err) {
+    console.error('[collections] Migration failed:', err)
+    // Mark as migrated anyway to prevent retrying on every load
+    localStorage.setItem(MIGRATION_FLAG, 'true')
+  }
 }
 
 // ── Store implementation ───────────────────────────────────────────
 
-export const useCollections = create<CollectionsState>()(
-  persist(
-    (set, get) => ({
-      collections: [],
-      isSyncing: false,
-      hydratedFromConvex: false,
+export const useCollections = create<CollectionsState>()((set, get) => ({
+  collections: [],
+  isLoading: false,
+  error: null,
 
-      create: (data) => {
-        const id = crypto.randomUUID()
-        const now = new Date()
-        const collection: Collection = {
-          id,
-          name: validateName(data.name),
-          description: validateDescription(data.description),
-          itemIds: [],
-          coverImageId: data.coverImageId,
-          color: data.color ?? 'blue',
-          createdAt: now,
-          updatedAt: now,
-        }
-
-        set((state) => ({
-          collections: [collection, ...state.collections],
-        }))
-
-        // Fire-and-forget sync to Convex
-        void get().syncToConvex()
-
-        return id
-      },
-
-      update: (id, data) => {
-        set((state) => ({
-          collections: state.collections.map((c) => {
-            if (c.id !== id) return c
-            return {
-              ...c,
-              ...(data.name !== undefined ? { name: validateName(data.name) } : {}),
-              ...(data.description !== undefined ? { description: validateDescription(data.description) } : {}),
-              ...(data.coverImageId !== undefined ? { coverImageId: data.coverImageId } : {}),
-              ...(data.color !== undefined ? { color: data.color } : {}),
-              updatedAt: new Date(),
-            }
-          }),
-        }))
-
-        void get().syncToConvex()
-      },
-
-      remove: (id) => {
-        set((state) => ({
-          collections: state.collections.filter((c) => c.id !== id),
-        }))
-
-        void get().syncToConvex()
-      },
-
-      addItems: (collectionId, itemIds) => {
-        const itemIdSet = new Set(itemIds)
-        if (itemIdSet.size === 0) return
-
-        set((state) => ({
-          collections: state.collections.map((c) => {
-            if (c.id !== collectionId) return c
-            const existing = new Set(c.itemIds)
-            const toAdd = itemIds.filter((id) => !existing.has(id))
-            if (toAdd.length === 0) return c
-            return {
-              ...c,
-              itemIds: [...c.itemIds, ...toAdd],
-              updatedAt: new Date(),
-            }
-          }),
-        }))
-
-        void get().syncToConvex()
-      },
-
-      removeItems: (collectionId, itemIds) => {
-        const toRemove = new Set(itemIds)
-        if (toRemove.size === 0) return
-
-        set((state) => ({
-          collections: state.collections.map((c) => {
-            if (c.id !== collectionId) return c
-            const remaining = c.itemIds.filter((id) => !toRemove.has(id))
-            if (remaining.length === c.itemIds.length) return c
-            return {
-              ...c,
-              itemIds: remaining,
-              updatedAt: new Date(),
-            }
-          }),
-        }))
-
-        void get().syncToConvex()
-      },
-
-      getById: (id) => get().collections.find((c) => c.id === id),
-
-      getCollectionsForItem: (itemId) =>
-        get().collections.filter((c) => c.itemIds.includes(itemId)),
-
-      hydrateFromConvex: async () => {
-        if (get().hydratedFromConvex) return
-
-        const siteUrl = getConvexSiteUrl()
-        if (!siteUrl) {
-          // Convex not configured — local-only mode
-          set({ hydratedFromConvex: true })
-          return
-        }
-
-        try {
-          const userId = getUserId()
-          const response = await fetch(`${siteUrl}/api/collections/list?userId=${encodeURIComponent(userId)}`)
-
-          if (!response.ok) {
-            console.warn('[collections] Convex hydration failed with status:', response.status)
-            set({ hydratedFromConvex: true })
-            return
-          }
-
-          const remoteCollections = (await response.json()) as ConvexCollection[]
-          if (!Array.isArray(remoteCollections) || remoteCollections.length === 0) {
-            set({ hydratedFromConvex: true })
-            return
-          }
-
-          const remoteMap = new Map<string, Collection>()
-          for (const rc of remoteCollections) {
-            try {
-              remoteMap.set(rc._id, convexToLocal(rc))
-            } catch {
-              // Skip malformed entries
-            }
-          }
-
-          set((state) => {
-            // Merge: local data wins when updatedAt is more recent
-            const localMap = new Map<string, Collection>()
-            for (const c of state.collections) {
-              localMap.set(c.id, c)
-            }
-
-            const merged = new Map<string, Collection>()
-
-            // Add all remote collections first
-            for (const [id, rc] of remoteMap) {
-              const local = localMap.get(id)
-              if (!local) {
-                merged.set(id, rc)
-              } else {
-                // Keep whichever has the more recent updatedAt
-                const localTime = new Date(local.updatedAt).getTime()
-                const remoteTime = new Date(rc.updatedAt).getTime()
-                merged.set(id, localTime >= remoteTime ? local : rc)
-              }
-            }
-
-            // Add local-only collections (not in remote)
-            for (const [id, c] of localMap) {
-              if (!merged.has(id)) {
-                merged.set(id, c)
-              }
-            }
-
-            // Sort by updatedAt descending
-            const sorted = Array.from(merged.values()).sort(
-              (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-            )
-
-            return {
-              collections: sorted,
-              hydratedFromConvex: true,
-            }
-          })
-        } catch (error) {
-          console.error('[collections] Failed to hydrate from Convex:', error)
-          set({ hydratedFromConvex: true })
-        }
-      },
-
-      syncToConvex: async () => {
-        const siteUrl = getConvexSiteUrl()
-        if (!siteUrl) return // Local-only mode
-
-        set({ isSyncing: true })
-
-        try {
-          const userId = getUserId()
-          const collections = get().collections
-
-          for (const collection of collections) {
-            try {
-              // Try to create — if it already exists (has a Convex _id format), update instead
-              const isConvexId = collection.id.includes('|') || collection.id.length > 30
-
-              if (isConvexId) {
-                // Update existing
-                await fetch(`${siteUrl}/api/collections/update`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    id: collection.id,
-                    name: collection.name,
-                    description: collection.description,
-                    coverImageId: collection.coverImageId,
-                    color: collection.color,
-                  }),
-                })
-              } else {
-                // Create new
-                const response = await fetch(`${siteUrl}/api/collections/create`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    name: collection.name,
-                    description: collection.description,
-                    color: collection.color,
-                    itemIds: collection.itemIds,
-                    coverImageId: collection.coverImageId,
-                    userId,
-                  }),
-                })
-
-                if (response.ok) {
-                  const result = await response.json()
-                  if (result.id && result.id !== collection.id) {
-                    // Update local state with Convex ID
-                    set((state) => ({
-                      collections: state.collections.map((c) =>
-                        c.id === collection.id ? { ...c, id: result.id } : c
-                      ),
-                    }))
-                  }
-                }
-              }
-            } catch (error) {
-              console.error('[collections] Failed to sync collection:', collection.id, error)
-              // Continue syncing other collections
-            }
-          }
-        } catch (error) {
-          console.error('[collections] syncToConvex failed:', error)
-        } finally {
-          set({ isSyncing: false })
-        }
-      },
-    }),
-    {
-      name: 'pixelcraft-collections',
-      storage: createJSONStorage(() => collectionsStorage),
-      partialize: (state) => ({
-        collections: state.collections,
-      }),
+  init: () => {
+    const client = getConvexClient()
+    if (!client) {
+      console.warn('[collections] Convex client not available — running in local-only mode')
+      set({ isLoading: false })
+      return
     }
-  )
-)
+
+    set({ isLoading: true })
+
+    // Run migration before starting subscription
+    void (async () => {
+      try {
+        await runMigrationIfNeeded(client)
+      } catch (err) {
+        console.error('[collections] Migration error:', err)
+      }
+
+      // Start watchQuery subscription
+      const userId = getUserId()
+
+      try {
+        const watch = client.watchQuery(api.collections.listByUser, { userId })
+
+        _unsubscribe = watch.onUpdate(() => {
+          const docs = watch.localQueryResult() as ConvexCollection[] | undefined
+          if (!docs) {
+            // Still loading — keep current state
+            return
+          }
+
+          const collections = docs.map(convexDocToCollection)
+          // Sort by updatedAt descending
+          collections.sort(
+            (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          )
+
+          set({ collections, isLoading: false, error: null })
+        })
+      } catch (err) {
+        console.error('[collections] Subscription error:', err)
+        set({ isLoading: false, error: 'Failed to subscribe to collections' })
+      }
+    })()
+  },
+
+  cleanup: () => {
+    if (_unsubscribe) {
+      _unsubscribe()
+      _unsubscribe = null
+    }
+  },
+
+  create: async (data) => {
+    const client = getConvexClient()
+    if (!client) {
+      throw new Error('[collections] Convex client not available')
+    }
+
+    const name = validateName(data.name)
+    const description = validateDescription(data.description)
+    const userId = getUserId()
+
+    try {
+      const id = await client.mutation(api.collections.create, {
+        name,
+        description,
+        color: data.color,
+        itemIds: [],
+        coverImageId: data.coverImageId,
+        userId,
+      })
+      // No local state update needed — watchQuery subscription will push the new collection
+      return id as string
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to create collection'
+      console.warn('[collections] Create error:', msg)
+      set({ error: msg })
+      throw err
+    }
+  },
+
+  update: (id, data) => {
+    const client = getConvexClient()
+    if (!client) return
+
+    const mutationArgs: { id: Id<"collections">; name?: string; description?: string; coverImageId?: string; color?: string } = {
+      id: id as Id<"collections">,
+    }
+    if (data.name !== undefined) mutationArgs.name = validateName(data.name)
+    if (data.description !== undefined) mutationArgs.description = validateDescription(data.description)
+    if (data.coverImageId !== undefined) mutationArgs.coverImageId = data.coverImageId
+    if (data.color !== undefined) mutationArgs.color = data.color
+
+    void client.mutation(api.collections.update, mutationArgs).catch((err) => {
+      const msg = err instanceof Error ? err.message : 'Failed to update collection'
+      console.warn('[collections] Update error:', msg)
+      set({ error: msg })
+    })
+    // No local state update — watchQuery will push the update
+  },
+
+  remove: (id) => {
+    const client = getConvexClient()
+    if (!client) return
+
+    void client.mutation(api.collections.remove, { id: id as Id<"collections"> }).catch((err) => {
+      const msg = err instanceof Error ? err.message : 'Failed to remove collection'
+      console.warn('[collections] Remove error:', msg)
+      set({ error: msg })
+    })
+  },
+
+  addItems: (collectionId, itemIds) => {
+    const itemIdSet = new Set(itemIds)
+    if (itemIdSet.size === 0) return
+
+    const client = getConvexClient()
+    if (!client) return
+
+    void client.mutation(api.collections.addItems, {
+      id: collectionId as Id<"collections">,
+      itemIds,
+    }).catch((err) => {
+      const msg = err instanceof Error ? err.message : 'Failed to add items to collection'
+      console.warn('[collections] AddItems error:', msg)
+      set({ error: msg })
+    })
+  },
+
+  removeItems: (collectionId, itemIds) => {
+    const toRemove = new Set(itemIds)
+    if (toRemove.size === 0) return
+
+    const client = getConvexClient()
+    if (!client) return
+
+    void client.mutation(api.collections.removeItems, {
+      id: collectionId as Id<"collections">,
+      itemIds,
+    }).catch((err) => {
+      const msg = err instanceof Error ? err.message : 'Failed to remove items from collection'
+      console.warn('[collections] RemoveItems error:', msg)
+      set({ error: msg })
+    })
+  },
+
+  getById: (id) => get().collections.find((c) => c.id === id),
+
+  getCollectionsForItem: (itemId) =>
+    get().collections.filter((c) => c.itemIds.includes(itemId)),
+}))

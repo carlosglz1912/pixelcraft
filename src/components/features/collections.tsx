@@ -570,15 +570,17 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
   const createCollection = useCollections((s) => s.create)
   const updateCollection = useCollections((s) => s.update)
   const removeCollection = useCollections((s) => s.remove)
-  const hydrateFromConvex = useCollections((s) => s.hydrateFromConvex)
+  const initCollections = useCollections((s) => s.init)
+  const cleanupCollections = useCollections((s) => s.cleanup)
 
   // Gallery for cover images and item counts
   const galleryItems = useGallery((s) => s.items)
 
-  // Hydrate from Convex on mount
+  // Initialize Convex subscription on mount
   useEffect(() => {
-    void hydrateFromConvex()
-  }, [hydrateFromConvex])
+    initCollections()
+    return () => cleanupCollections()
+  }, [initCollections, cleanupCollections])
 
   // Filter collections by search
   const filteredCollections = searchQuery.trim()
@@ -626,14 +628,15 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
       return
     }
     try {
-      createCollection({
+      void createCollection({
         name,
         description: formData.description.trim() || undefined,
         color: formData.color,
+      }).then(() => {
+        setCreateOpen(false)
+        setFormData(EMPTY_FORM)
+        toast.success('Colección creada')
       })
-      setCreateOpen(false)
-      setFormData(EMPTY_FORM)
-      toast.success('Colección creada')
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Error al crear la colección'
       toast.error(msg)
