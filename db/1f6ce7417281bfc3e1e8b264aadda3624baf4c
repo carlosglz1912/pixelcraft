@@ -1,0 +1,25 @@
+src/components/providers/ConvexProvider.tsx
+  5e4f033005e1c01e 5,8
+src/lib/convex-client.ts
+  5e4f033005e1c01e 1-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "db1f6ce7417281bfc3e1e8b264aadda3624baf4c",
+  "prompts": {
+    "5e4f033005e1c01e": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "1f8ab701-2fc9-48cd-a452-765f566921d2",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 23,
+      "total_deletions": 7,
+      "accepted_lines": 23,
+      "overriden_lines": 0
+    }
+  }
+}
