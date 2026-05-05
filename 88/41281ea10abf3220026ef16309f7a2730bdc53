@@ -1,0 +1,56 @@
+src/lib/collection-cost.ts
+  2f7a0e64ecd6ee0a 31,33,40
+src/components/features/collections.tsx
+  aa6985263b4480bd 39,45,240,247,290-297,328,330-339,573-580,656,660-669,744-763,765,898-918
+  2f7a0e64ecd6ee0a 150,222,251,282
+src/__tests__/collection-cost.test.ts
+  2f7a0e64ecd6ee0a 87
+src/stores/collections.ts
+  74a952403c854ae8 5,52-61,64,138-144,147-152,194-199,207,210-215,236-238,248,259
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "8841281ea10abf3220026ef16309f7a2730bdc53",
+  "prompts": {
+    "2f7a0e64ecd6ee0a": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "b067630b-c571-4ca7-9434-df40e2ae9a65",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 11,
+      "total_deletions": 15,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    },
+    "74a952403c854ae8": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "2aa9abc7-f0b0-478d-8904-35d0c2810e3f",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 43,
+      "total_deletions": 7,
+      "accepted_lines": 43,
+      "overriden_lines": 0
+    },
+    "aa6985263b4480bd": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "fb1b0c93-0217-4e49-9299-8b5bc05efa31",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 656,
+      "total_deletions": 117,
+      "accepted_lines": 554,
+      "overriden_lines": 0
+    }
+  }
+}
