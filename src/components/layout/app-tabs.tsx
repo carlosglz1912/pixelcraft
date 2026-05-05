@@ -15,11 +15,12 @@ import { useVideoStudio } from '@/hooks/use-video-studio'
 import { ImageStudioPanel } from '@/components/layout/image-studio-panel'
 import { VideoStudioPanel } from '@/components/layout/video-studio-panel'
 import { SidebarHeader } from '@/components/layout/sidebar-header'
+import { ModelConfig } from '@/components/features/model-config'
 import { StudioModeSelector } from '@/components/layout/studio-mode-selector'
 import { SidebarFooterExpanded, SidebarFooterCollapsed } from '@/components/layout/sidebar-footer'
 import { LayoutGroup, motion, AnimatePresence } from '@/lib/motion'
 import { SIDEBAR_SPRING, SIDEBAR_EXIT_VARIANTS, layoutGroupId } from '@/lib/motion'
-import { Dialog, DialogContent, DialogOverlay, DialogPortal, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogOverlay, DialogPortal, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { useMediaQuery } from '@/hooks/use-media-query'
 
 export function AppTabs() {
@@ -27,6 +28,7 @@ export function AppTabs() {
   const [studioMode, setStudioMode] = useState<StudioMode>('image')
   const [mainTab, setMainTab] = useState<MainTab>('gallery')
   const [sidebarOverlayOpen, setSidebarOverlayOpen] = useState(false)
+  const [configOpen, setConfigOpen] = useState(false)
 
   // Responsive breakpoints — default to false for SSR hydration consistency
   // Each hook must be called unconditionally to satisfy Rules of Hooks
@@ -222,6 +224,7 @@ export function AppTabs() {
                   sidebarCollapsed={false}
                   onToggleCollapse={() => {}}
                   onClose={closeOverlay}
+                  onOpenConfig={() => setConfigOpen(true)}
                 />
                 <StudioModeSelector
                   studioMode={studioMode}
@@ -269,6 +272,17 @@ export function AppTabs() {
           }
         }}
       />
+
+      {/* Model config dialog */}
+      <Dialog open={configOpen} onOpenChange={setConfigOpen}>
+        <DialogContent className="depth-mixed border-secondary/25 bg-slate-950/95 text-white sm:max-w-lg p-0 overflow-hidden">
+          <DialogTitle className="sr-only">Configuración de Modelos</DialogTitle>
+          <DialogDescription className="sr-only">Configura la visibilidad de modelos y gestiona presets.</DialogDescription>
+          <div className="max-h-[85vh] overflow-hidden flex flex-col">
+            <ModelConfig />
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

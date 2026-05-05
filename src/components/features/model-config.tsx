@@ -490,7 +490,7 @@ export function ModelConfig({ onSwitchTab }: ModelConfigProps) {
       </div>
 
       {/* Content */}
-      <ScrollArea className="h-[calc(100vh-4.75rem)] h-[calc(100dvh-4.75rem)]">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-5 p-5">
           {/* Mode sections — only show the active tab */}
           {activeMode === 'image' ? (
