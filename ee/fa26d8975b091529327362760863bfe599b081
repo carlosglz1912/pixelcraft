@@ -1,0 +1,27 @@
+src/components/features/model-config.tsx
+  66de7c6449f0c338 493
+src/components/layout/app-tabs.tsx
+  66de7c6449f0c338 18,23,31,227,275-285
+src/components/layout/sidebar-header.tsx
+  66de7c6449f0c338 3,12-13,16,21-39,59-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "eefa26d8975b091529327362760863bfe599b081",
+  "prompts": {
+    "66de7c6449f0c338": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "d1e896b0-1b26-41b9-bd38-d69ec01c36aa",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 55,
+      "total_deletions": 9,
+      "accepted_lines": 55,
+      "overriden_lines": 0
+    }
+  }
+}
