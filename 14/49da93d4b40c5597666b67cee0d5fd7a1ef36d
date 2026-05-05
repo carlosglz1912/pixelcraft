@@ -1,0 +1,23 @@
+src/components/features/asset-picker.tsx
+  aa6985263b4480bd 1-468
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "1449da93d4b40c5597666b67cee0d5fd7a1ef36d",
+  "prompts": {
+    "aa6985263b4480bd": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "fb1b0c93-0217-4e49-9299-8b5bc05efa31",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 468,
+      "overriden_lines": 0
+    }
+  }
+}
