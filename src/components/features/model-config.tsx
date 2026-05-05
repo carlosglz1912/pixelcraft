@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -327,9 +328,12 @@ function PresetManager() {
       )}
 
       {presets.length === 0 ? (
-        <p className="text-xs text-slate-500 px-1">
-          No hay presets guardados. Configura la visibilidad y guarda un preset para reutilizarlo.
-        </p>
+        <div className="flex items-center gap-2 rounded-xl border border-dashed border-secondary/20 bg-slate-900/40 px-3 py-4 text-center">
+          <Sparkles className="h-4 w-4 text-slate-500 shrink-0" />
+          <p className="text-xs text-slate-500">
+            No hay presets guardados. Configura la visibilidad y guarda un preset para reutilizarlo.
+          </p>
+        </div>
       ) : (
         <div className="space-y-1.5">
           {presets.map((preset) => (
@@ -388,6 +392,9 @@ function PresetManager() {
         <DialogContent className="depth-mixed border-secondary/25 bg-slate-950/95 text-white sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Guardar Preset</DialogTitle>
+            <DialogDescription>
+              Guarda la configuración actual de visibilidad como un preset reutilizable.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <Input
@@ -485,15 +492,16 @@ export function ModelConfig({ onSwitchTab }: ModelConfigProps) {
       {/* Content */}
       <ScrollArea className="h-[calc(100vh-4.75rem)] h-[calc(100dvh-4.75rem)]">
         <div className="space-y-5 p-5">
-          {/* Preset manager */}
-          <PresetManager />
-
           {/* Mode sections — only show the active tab */}
           {activeMode === 'image' ? (
             <ModeSection mode="image" families={IMAGE_MODEL_FAMILIES} />
           ) : (
             <ModeSection mode="video" families={VIDEO_MODEL_FAMILIES} />
           )}
+
+          {/* Separator + Preset manager */}
+          <div className="border-t border-secondary/15" />
+          <PresetManager />
         </div>
       </ScrollArea>
     </div>
