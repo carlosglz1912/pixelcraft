@@ -1,0 +1,23 @@
+src/components/features/model-config.tsx
+  3f649d10ba3314f3 1-501
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "ad9b169ef189921ceed07d166dedc1778f0457eb",
+  "prompts": {
+    "3f649d10ba3314f3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "1c9b07ef-71fe-4992-af82-0fea772d9039",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 501,
+      "total_deletions": 0,
+      "accepted_lines": 501,
+      "overriden_lines": 0
+    }
+  }
+}
