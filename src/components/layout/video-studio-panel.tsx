@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import {
   ChevronRight,
@@ -7,6 +8,7 @@ import {
   Image as ImageIcon,
   ImagePlus,
   Music,
+  Sparkles,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -26,6 +28,7 @@ import {
   VIDEO_MODEL_FAMILIES,
   getCostTierLabel,
 } from '@/types'
+import { useModelConfig } from '@/stores/model-config'
 import {
   getVideoRatioCard,
   getResolutionLabel,
@@ -229,6 +232,41 @@ export function VideoStudioPanel({
   removeVideoElement,
   openVideoSourcePicker,
 }: VideoStudioPanelProps) {
+  const { isFamilyVisible, isModelVisible } = useModelConfig()
+
+  // Build filtered families: exclude hidden families and hidden models within visible families.
+  // If all models in a family are hidden, exclude the family too.
+  const filteredFamilies = useMemo(() => {
+    const result: [string, { name: string; models: Record<string, (typeof VIDEO_MODEL_FAMILIES)[string]['models'][string]> }][] = []
+
+    for (const [familyId, family] of Object.entries(VIDEO_MODEL_FAMILIES)) {
+      if (!isFamilyVisible('video', familyId)) continue
+
+      const visibleModels = Object.entries(family.models).filter(
+        ([modelId]) => isModelVisible('video', modelId),
+      )
+
+      if (visibleModels.length === 0) continue
+
+      result.push([familyId, { name: family.name, models: Object.fromEntries(visibleModels) }])
+    }
+
+    return result
+  }, [isFamilyVisible, isModelVisible])
+
+  // All visible model IDs (flat list for auto-migration)
+  const allVisibleModelIds = useMemo(
+    () => filteredFamilies.flatMap(([, family]) => Object.keys(family.models)),
+    [filteredFamilies],
+  )
+
+  // Auto-migrate: when the currently selected model is hidden, select the first visible one.
+  useEffect(() => {
+    if (allVisibleModelIds.length === 0) return
+    if (videoModel && allVisibleModelIds.includes(videoModel)) return
+    setVideoModel(allVisibleModelIds[0])
+  }, [allVisibleModelIds, videoModel, setVideoModel])
+
   if (isAuroraModel) {
     return (
       <>
@@ -411,8 +449,15 @@ export function VideoStudioPanel({
               </Label>
               <ChevronRight className="h-4 w-4 text-slate-400 transition group-open:rotate-90" />
             </summary>
+            {filteredFamilies.length === 0 ? (
+              <div className="mt-3 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-secondary/25 bg-slate-950/55 py-8 text-center">
+                <Sparkles className="h-8 w-8 text-secondary-tint/40" />
+                <p className="text-sm text-slate-400">No hay modelos visibles.</p>
+                <p className="text-xs text-slate-500">Habilita familias o modelos en la configuración.</p>
+              </div>
+            ) : (
             <div className="mt-3 space-y-2">
-              {Object.entries(VIDEO_MODEL_FAMILIES).map(([familyId, family]) => (
+              {filteredFamilies.map(([familyId, family]) => (
                 <details key={familyId} className="group/family rounded-2xl border border-secondary/15 bg-slate-950/55">
                   <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2">
                     <div className="flex items-center gap-2">
@@ -449,6 +494,7 @@ export function VideoStudioPanel({
                 </details>
               ))}
             </div>
+            )}
           </details>
         </div>
       </>
@@ -873,13 +919,20 @@ export function VideoStudioPanel({
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="depth-secondary border border-secondary/25 bg-secondary/10 text-secondary-tint">
-                {Object.keys(VIDEO_MODEL_FAMILIES).length} familias
+                {filteredFamilies.length} familias
               </Badge>
               <ChevronRight className="h-4 w-4 text-slate-400 transition group-open:rotate-90" />
             </div>
           </summary>
+          {filteredFamilies.length === 0 ? (
+            <div className="mt-3 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-secondary/25 bg-slate-950/55 py-8 text-center">
+              <Sparkles className="h-8 w-8 text-secondary-tint/40" />
+              <p className="text-sm text-slate-400">No hay modelos visibles.</p>
+              <p className="text-xs text-slate-500">Habilita familias o modelos en la configuración.</p>
+            </div>
+          ) : (
           <div className="mt-3 space-y-2">
-            {Object.entries(VIDEO_MODEL_FAMILIES).map(([familyId, family]) => (
+            {filteredFamilies.map(([familyId, family]) => (
               <details key={familyId} className="group/family rounded-2xl border border-secondary/15 bg-slate-950/55">
                 <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2">
                   <div className="flex items-center gap-2">
@@ -916,6 +969,7 @@ export function VideoStudioPanel({
               </details>
             ))}
           </div>
+          )}
         </details>
       </div>
 
