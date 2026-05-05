@@ -17,6 +17,7 @@ import { VideoStudioPanel } from '@/components/layout/video-studio-panel'
 import { SidebarHeader } from '@/components/layout/sidebar-header'
 import { ModelConfig } from '@/components/features/model-config'
 import { StudioModeSelector } from '@/components/layout/studio-mode-selector'
+import { PresetBar } from '@/components/layout/preset-bar'
 import { SidebarFooterExpanded, SidebarFooterCollapsed } from '@/components/layout/sidebar-footer'
 import { LayoutGroup, motion, AnimatePresence } from '@/lib/motion'
 import { SIDEBAR_SPRING, SIDEBAR_EXIT_VARIANTS, layoutGroupId } from '@/lib/motion'
@@ -164,6 +165,7 @@ export function AppTabs() {
             >
               <ScrollArea className="min-h-0 flex-1">
                 <div className="space-y-4 p-4">
+                  <PresetBar />
                   {studioMode === 'image' ? (
                     <ImageStudioPanel {...imageStudio} />
                   ) : (
@@ -233,6 +235,7 @@ export function AppTabs() {
                 />
                 <ScrollArea className="min-h-0 flex-1">
                   <div className="space-y-4 p-4">
+                    <PresetBar />
                     {studioMode === 'image' ? (
                       <ImageStudioPanel {...imageStudio} />
                     ) : (
