@@ -1,0 +1,27 @@
+package.json
+  56c93630a71b7df7 18-19,48-49
+vitest.config.ts
+  56c93630a71b7df7 1-15
+src/stores/__tests__/model-config.test.ts
+  56c93630a71b7df7 1-310
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "907798bc5586b821b72a02e9d9560bfdbb8db222",
+  "prompts": {
+    "56c93630a71b7df7": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "f9470a87-d9c8-47a7-97a8-4af8c2b8390b",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912",
+      "messages": [],
+      "total_additions": 329,
+      "total_deletions": 2,
+      "accepted_lines": 329,
+      "overriden_lines": 0
+    }
+  }
+}
