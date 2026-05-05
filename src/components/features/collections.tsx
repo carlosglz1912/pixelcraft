@@ -36,11 +36,13 @@ import {
   FolderPlus,
   Sparkles,
   Maximize2,
+  PackagePlus,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AnimatePresence, motion, galleryItemVariants } from '@/lib/motion'
 import { getCollectionItems, calculateCollectionCost } from '@/lib/collection-cost'
 import { formatCostEstimate, formatCostEstimateMxn } from '@/lib/cost-estimate'
+import { AssetPicker } from '@/components/features/asset-picker'
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -145,7 +147,7 @@ function CollectionCard({
 }) {
   const colorConfig = COLLECTION_COLORS[collection.color] ?? COLLECTION_COLORS.blue
   const items = getCollectionItems(galleryItems, collection)
-  const { totalUsd, totalMxn } = calculateCollectionCost(items)
+  const { totalUsd } = calculateCollectionCost(items)
 
   return (
     <motion.div
@@ -217,7 +219,7 @@ function CollectionCard({
             </Badge>
             {totalUsd > 0 && (
               <Badge variant="secondary" className="depth-primary border border-primary/20 bg-primary/10 text-primary-tint text-xs">
-                {formatCostEstimate(totalUsd)} <span className="mx-0.5 opacity-50">·</span> {formatCostEstimateMxn(totalMxn)}
+                {formatCostEstimate(totalUsd)} <span className="mx-0.5 opacity-50">·</span> {formatCostEstimateMxn(totalUsd)}
               </Badge>
             )}
           </div>
@@ -235,18 +237,18 @@ function CollectionDetail({
   onBack,
   onEdit,
   onDelete,
-  onSwitchTab,
+  onOpenPicker,
 }: {
   collection: Collection
   galleryItems: GeneratedMedia[]
   onBack: () => void
   onEdit: () => void
   onDelete: () => void
-  onSwitchTab?: (tab: 'gallery' | 'storage' | 'collections') => void
+  onOpenPicker?: (collectionId: string, collectionName: string, collectionColor: CollectionColor) => void
 }) {
   const colorConfig = COLLECTION_COLORS[collection.color] ?? COLLECTION_COLORS.blue
   const items = getCollectionItems(galleryItems, collection)
-  const { totalUsd, totalMxn } = calculateCollectionCost(items)
+  const { totalUsd } = calculateCollectionCost(items)
 
   return (
     <div className="flex h-full flex-col">
@@ -277,12 +279,22 @@ function CollectionDetail({
                 {formatCostEstimate(totalUsd)} USD
               </Badge>
               <Badge variant="secondary" className="depth-primary border border-primary/20 bg-primary/10 text-primary-tint">
-                {formatCostEstimateMxn(totalMxn)}
+                {formatCostEstimateMxn(totalUsd)}
               </Badge>
             </>
           )}
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              onOpenPicker?.(collection.id, collection.name, collection.color)
+            }}
+            className="depth-primary rounded-2xl border border-primary/25 bg-primary/20 px-3 py-1.5 text-xs font-medium text-primary-tint transition hover:bg-primary/30 hover:border-primary/40"
+          >
+            <PackagePlus className="mr-1.5 inline h-3 w-3" />
+            Añadir assets
+          </button>
           <button
             type="button"
             onClick={onEdit}
@@ -313,18 +325,18 @@ function CollectionDetail({
             </div>
             <p className="text-lg font-semibold text-white">Colección vacía</p>
             <p className="mt-3 text-sm text-slate-400">
-              Esta colección no tiene elementos aún. Ve a la galería para generar contenido.
+              Añade assets desde tu galería para llenar esta colección.
             </p>
-            {onSwitchTab && (
-              <button
-                type="button"
-                onClick={() => onSwitchTab('gallery')}
-                className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/20 px-6 py-3 text-sm font-semibold text-primary-tint transition hover:bg-primary/30 hover:border-primary/40 active:scale-[0.98]"
-              >
-                <ImageIcon className="h-4 w-4" />
-                Ir a la Galería
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                onOpenPicker?.(collection.id, collection.name, collection.color)
+              }}
+              className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/20 px-6 py-3 text-sm font-semibold text-primary-tint transition hover:bg-primary/30 hover:border-primary/40 active:scale-[0.98]"
+            >
+              <PackagePlus className="h-4 w-4" />
+              Añadir assets
+            </button>
           </div>
         </div>
       ) : (
@@ -558,6 +570,14 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
   // View state
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null)
 
+  // Asset picker state — opens automatically after collection creation
+  const [pickerState, setPickerState] = useState<{
+    open: boolean
+    collectionId: string
+    collectionName: string
+    collectionColor: CollectionColor
+  }>({ open: false, collectionId: '', collectionName: '', collectionColor: 'blue' })
+
   // Dialog state
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Collection | null>(null)
@@ -633,10 +653,20 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
         name,
         description: formData.description.trim() || undefined,
         color: formData.color,
-      }).then(() => {
+      }).then((id) => {
         setCreateOpen(false)
         setFormData(EMPTY_FORM)
         toast.success('Colección creada')
+
+        // Auto-launch asset picker for the new collection
+        if (id) {
+          setPickerState({
+            open: true,
+            collectionId: id,
+            collectionName: name,
+            collectionColor: formData.color,
+          })
+        }
       })
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Error al crear la colección'
@@ -711,8 +741,28 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
           onBack={handleBackToList}
           onEdit={() => handleOpenEdit(selectedCollection)}
           onDelete={() => setDeleteTarget(selectedCollection)}
-          onSwitchTab={onSwitchTab}
+          onOpenPicker={(id, name, color) => {
+            setPickerState({ open: true, collectionId: id, collectionName: name, collectionColor: color })
+          }}
         />
+
+        {/* Asset Picker — opens from empty state or header button */}
+        <AssetPicker
+          open={pickerState.open}
+          onClose={() => setPickerState((s) => ({ ...s, open: false }))}
+          collectionId={pickerState.collectionId}
+          collectionName={pickerState.collectionName}
+          collectionColor={pickerState.collectionColor}
+          onComplete={(addedIds) => {
+            // Refresh the detail view to show new items
+            if (addedIds.length > 0 && !selectedCollection.coverImageId) {
+              // Auto-set first added item as cover
+              const updateCollection = useCollections.getState().update
+              updateCollection(pickerState.collectionId, { coverImageId: addedIds[0] })
+            }
+          }}
+        />
+
         {/* Reuse same dialogs */}
         <CollectionDialogs
           createOpen={createOpen}
@@ -844,6 +894,27 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
           </ScrollArea>
         )}
       </div>
+
+      {/* Asset Picker — opens after collection creation */}
+      <AssetPicker
+        open={pickerState.open}
+        onClose={() => setPickerState((s) => ({ ...s, open: false }))}
+        collectionId={pickerState.collectionId}
+        collectionName={pickerState.collectionName}
+        collectionColor={pickerState.collectionColor}
+        onComplete={(addedIds) => {
+          // Auto-navigate to the collection detail after adding items
+          if (addedIds.length > 0) {
+            setSelectedCollectionId(pickerState.collectionId)
+
+            // Auto-set first item as cover if collection has no cover
+            const collection = useCollections.getState().getById(pickerState.collectionId)
+            if (collection && !collection.coverImageId) {
+              useCollections.getState().update(pickerState.collectionId, { coverImageId: addedIds[0] })
+            }
+          }
+        }}
+      />
 
       <CollectionDialogs
         createOpen={createOpen}

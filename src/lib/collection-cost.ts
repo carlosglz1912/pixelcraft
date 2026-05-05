@@ -1,5 +1,4 @@
 import type { Collection, CostTier, GeneratedMedia } from '@/types'
-import { USD_TO_MXN_RATE } from './cost-estimate'
 
 const COST_TIER_FALLBACKS: Record<CostTier, number> = {
   free: 0,
@@ -29,17 +28,16 @@ export function getCollectionItems(
 }
 
 /**
- * Calculates the total cost of a set of gallery items.
+ * Calculates the total USD cost of a set of gallery items.
  * Uses estimatedCost from metadata when available, falls back to costTier.
- * Returns both USD and MXN totals plus a per-item breakdown.
+ * Returns USD total plus a per-item breakdown.
  */
 export function calculateCollectionCost(items: GeneratedMedia[]): {
   totalUsd: number
-  totalMxn: number
   breakdown: { itemId: string; cost: number }[]
 } {
   if (items.length === 0) {
-    return { totalUsd: 0, totalMxn: 0, breakdown: [] }
+    return { totalUsd: 0, breakdown: [] }
   }
 
   const breakdown = items.map((item) => {
@@ -58,7 +56,6 @@ export function calculateCollectionCost(items: GeneratedMedia[]): {
 
   return {
     totalUsd: Math.round(totalUsd * 10000) / 10000,
-    totalMxn: Math.round(totalUsd * USD_TO_MXN_RATE * 100) / 100,
     breakdown,
   }
 }

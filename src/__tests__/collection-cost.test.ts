@@ -84,7 +84,7 @@ describe('getCollectionItems', () => {
 describe('calculateCollectionCost', () => {
   it('returns zeros and empty breakdown for empty list', () => {
     const result = calculateCollectionCost([])
-    expect(result).toEqual({ totalUsd: 0, totalMxn: 0, breakdown: [] })
+    expect(result).toEqual({ totalUsd: 0, breakdown: [] })
   })
 
   it('sums estimatedCost from metadata', () => {
@@ -101,7 +101,6 @@ describe('calculateCollectionCost', () => {
 
     const result = calculateCollectionCost(items)
     expect(result.totalUsd).toBe(0.15)
-    expect(result.totalMxn).toBeGreaterThan(0)
     expect(result.breakdown).toHaveLength(2)
     expect(result.breakdown[0].cost).toBe(0.05)
     expect(result.breakdown[1].cost).toBe(0.10)

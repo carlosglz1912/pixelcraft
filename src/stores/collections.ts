@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { Id } from '../../convex/_generated/dataModel'
 import type { Collection, CollectionColor } from '@/types'
 import { getConvexClient } from '@/lib/convex-client'
-import { getUserId } from '@/lib/user'
+import { getUser } from '@/lib/user'
 import { api } from '../../convex/_generated/api'
 
 // ── Convex document → local Collection mapping ─────────────────────
@@ -49,9 +49,19 @@ function validateDescription(description: string | undefined): string | undefine
   return description.trim().slice(0, MAX_DESCRIPTION_LENGTH) || undefined
 }
 
-// ── Module-scoped subscription handle ──────────────────────────────
+/**
+ * Stable user ID for Convex operations.
+ * Always uses deviceId — never username — so collections aren't orphaned
+ * or duplicated when the user changes their username.
+ */
+function getStableUserId(): string {
+  return getUser().deviceId
+}
+
+// ── Module-scoped subscription & migration lock ────────────────────
 
 let _unsubscribe: (() => void) | null = null
+let _initPromise: Promise<void> | null = null
 
 // ── Store interface ────────────────────────────────────────────────
 
@@ -125,9 +135,21 @@ async function runMigrationIfNeeded(client: NonNullable<ReturnType<typeof getCon
       return
     }
 
-    const userId = getUserId()
+    const userId = getStableUserId()
+
+    // Fetch existing collections to avoid duplicates
+    const existing = await client.query(api.collections.listByUser, { userId })
+    const existingNames = new Set(
+      (existing as ConvexCollection[]).map((c) => c.name.trim().toLowerCase())
+    )
 
     for (const c of oldCollections) {
+      // Skip if a collection with the same name already exists
+      if (existingNames.has(c.name.trim().toLowerCase())) {
+        console.info('[collections] Migration: skipping duplicate', c.name)
+        continue
+      }
+
       try {
         await client.mutation(api.collections.create, {
           name: c.name,
@@ -169,8 +191,12 @@ export const useCollections = create<CollectionsState>()((set, get) => ({
 
     set({ isLoading: true })
 
-    // Run migration before starting subscription
-    void (async () => {
+    // Prevent concurrent initialization (React strict mode calls useEffect twice)
+    if (_initPromise) {
+      return
+    }
+
+    _initPromise = (async () => {
       try {
         await runMigrationIfNeeded(client)
       } catch (err) {
@@ -178,9 +204,15 @@ export const useCollections = create<CollectionsState>()((set, get) => ({
       }
 
       // Start watchQuery subscription
-      const userId = getUserId()
+      const userId = getStableUserId()
 
       try {
+        // Clean up any previous subscription before starting a new one
+        if (_unsubscribe) {
+          _unsubscribe()
+          _unsubscribe = null
+        }
+
         const watch = client.watchQuery(api.collections.listByUser, { userId })
 
         _unsubscribe = watch.onUpdate(() => {
@@ -201,6 +233,9 @@ export const useCollections = create<CollectionsState>()((set, get) => ({
       } catch (err) {
         console.error('[collections] Subscription error:', err)
         set({ isLoading: false, error: 'Failed to subscribe to collections' })
+      } finally {
+        // Allow re-init after this one completes (e.g., component remount)
+        _initPromise = null
       }
     })()
   },
@@ -210,6 +245,7 @@ export const useCollections = create<CollectionsState>()((set, get) => ({
       _unsubscribe()
       _unsubscribe = null
     }
+    _initPromise = null
   },
 
   create: async (data) => {
@@ -220,7 +256,7 @@ export const useCollections = create<CollectionsState>()((set, get) => ({
 
     const name = validateName(data.name)
     const description = validateDescription(data.description)
-    const userId = getUserId()
+    const userId = getStableUserId()
 
     try {
       const id = await client.mutation(api.collections.create, {
