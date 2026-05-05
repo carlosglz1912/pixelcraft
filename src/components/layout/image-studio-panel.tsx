@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import {
   Image as ImageIcon,
@@ -34,6 +35,7 @@ import {
   IMAGE_MODEL_FAMILIES,
   getCostTierLabel,
 } from '@/types'
+import { useModelConfig } from '@/stores/model-config'
 
 export interface ImageStudioPanelProps {
   // State
@@ -158,6 +160,41 @@ export function ImageStudioPanel({
   handleReferenceFileChange,
   openReferenceGalleryPicker,
 }: ImageStudioPanelProps) {
+  const { isFamilyVisible, isModelVisible } = useModelConfig()
+
+  // Build filtered families: exclude hidden families and hidden models within visible families.
+  // If all models in a family are hidden, exclude the family too.
+  const filteredFamilies = useMemo(() => {
+    const result: [string, { name: string; models: Record<string, (typeof IMAGE_MODEL_FAMILIES)[string]['models'][string]> }][] = []
+
+    for (const [familyId, family] of Object.entries(IMAGE_MODEL_FAMILIES)) {
+      if (!isFamilyVisible('image', familyId)) continue
+
+      const visibleModels = Object.entries(family.models).filter(
+        ([modelId]) => isModelVisible('image', modelId),
+      )
+
+      if (visibleModels.length === 0) continue
+
+      result.push([familyId, { name: family.name, models: Object.fromEntries(visibleModels) }])
+    }
+
+    return result
+  }, [isFamilyVisible, isModelVisible])
+
+  // All visible model IDs (flat list for auto-migration)
+  const allVisibleModelIds = useMemo(
+    () => filteredFamilies.flatMap(([, family]) => Object.keys(family.models)),
+    [filteredFamilies],
+  )
+
+  // Auto-migrate: when the currently selected model is hidden, select the first visible one.
+  useEffect(() => {
+    if (allVisibleModelIds.length === 0) return
+    if (imageModel && allVisibleModelIds.includes(imageModel)) return
+    setImageModel(allVisibleModelIds[0])
+  }, [allVisibleModelIds, imageModel, setImageModel])
+
   return (
     <>
       <div className="depth-mixed rounded-3xl border border-secondary/20 bg-slate-900/70 p-4">
@@ -268,11 +305,18 @@ export function ImageStudioPanel({
             Models
           </Label>
           <Badge variant="secondary" className="depth-secondary border border-secondary/25 bg-secondary/10 text-secondary-tint">
-            {Object.keys(IMAGE_MODEL_FAMILIES).length} familias
+            {filteredFamilies.length} familias
           </Badge>
         </div>
+        {filteredFamilies.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-secondary/25 bg-slate-950/55 py-8 text-center">
+            <Sparkles className="h-8 w-8 text-secondary-tint/40" />
+            <p className="text-sm text-slate-400">No hay modelos visibles.</p>
+            <p className="text-xs text-slate-500">Habilita familias o modelos en la configuración.</p>
+          </div>
+        ) : (
         <div className="space-y-3">
-          {Object.entries(IMAGE_MODEL_FAMILIES).map(([familyId, family]) => (
+          {filteredFamilies.map(([familyId, family]) => (
             <div key={familyId} className="rounded-2xl border border-secondary/15 bg-slate-950/55 p-2">
               <div className="mb-2 flex items-center justify-between px-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -309,6 +353,7 @@ export function ImageStudioPanel({
             </div>
           ))}
         </div>
+        )}
       </div>
 
       {supportsSize ? (
