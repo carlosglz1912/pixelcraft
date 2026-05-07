@@ -1,0 +1,22 @@
+src/components/features/collections.tsx
+  s_8c5206f6823f18::t_da7c8ca87f0a41 40
+  s_8c5206f6823f18::t_ce7e40c70ecefd 45
+  s_8c5206f6823f18::t_e9ffaf630d8f5c 97-117
+  s_8c5206f6823f18::t_48a94c38085ee9 590-740
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "91ca31a809f035d23fcb0d31065650c37435a6f6",
+  "prompts": {},
+  "sessions": {
+    "s_8c5206f6823f18": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "40916d40-4077-455a-9f0c-cfd1dbdf55cb",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912 <carlosglz1912@gmail.com>"
+    }
+  }
+}
