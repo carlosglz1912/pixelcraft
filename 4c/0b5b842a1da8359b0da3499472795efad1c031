@@ -1,0 +1,19 @@
+src/lib/csv-export.ts
+  s_136097e9246423::t_9d1319e08f2ff7 1-208
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "4c0b5b842a1da8359b0da3499472795efad1c031",
+  "prompts": {},
+  "sessions": {
+    "s_136097e9246423": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "256428fd-d025-439d-9865-2351326a4281",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912 <carlosglz1912@gmail.com>"
+    }
+  }
+}
