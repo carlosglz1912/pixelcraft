@@ -158,6 +158,7 @@ function CollectionCard({
   galleryItems,
   onEdit,
   onDelete,
+  onExport,
   onClick,
 }: {
   collection: Collection
@@ -166,6 +167,7 @@ function CollectionCard({
   galleryItems: GeneratedMedia[]
   onEdit: () => void
   onDelete: () => void
+  onExport: () => void
   onClick: () => void
 }) {
   const colorConfig = COLLECTION_COLORS[collection.color] ?? COLLECTION_COLORS.blue
@@ -218,6 +220,16 @@ function CollectionCard({
             <span
               role="button"
               tabIndex={0}
+              onClick={(e) => { e.stopPropagation(); onExport() }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onExport() } }}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
+              aria-label="Exportar costos"
+            >
+              <Download className="h-4 w-4" />
+            </span>
+            <span
+              role="button"
+              tabIndex={0}
               onClick={(e) => { e.stopPropagation(); onDelete() }}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onDelete() } }}
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 backdrop-blur-sm transition hover:bg-red-500/20"
@@ -260,6 +272,7 @@ function CollectionDetail({
   onBack,
   onEdit,
   onDelete,
+  onExport,
   onOpenPicker,
 }: {
   collection: Collection
@@ -267,6 +280,7 @@ function CollectionDetail({
   onBack: () => void
   onEdit: () => void
   onDelete: () => void
+  onExport: () => void
   onOpenPicker?: (collectionId: string, collectionName: string, collectionColor: CollectionColor) => void
 }) {
   const colorConfig = COLLECTION_COLORS[collection.color] ?? COLLECTION_COLORS.blue
@@ -317,6 +331,14 @@ function CollectionDetail({
           >
             <PackagePlus className="mr-1.5 inline h-3 w-3" />
             Añadir assets
+          </button>
+          <button
+            type="button"
+            onClick={onExport}
+            className="depth-primary rounded-2xl border border-primary/25 bg-primary/20 px-3 py-1.5 text-xs font-medium text-primary-tint transition hover:bg-primary/30 hover:border-primary/40"
+          >
+            <Download className="mr-1.5 inline h-3 w-3" />
+            Exportar
           </button>
           <button
             type="button"
@@ -759,6 +781,15 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
   const [formData, setFormData] = useState<FormData>(EMPTY_FORM)
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Export dialog state
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [exportPreselectedId, setExportPreselectedId] = useState<string | null>(null)
+
+  function handleOpenExport(collectionId?: string) {
+    setExportPreselectedId(collectionId ?? null)
+    setExportDialogOpen(true)
+  }
+
   // Store
   const collections = useCollections((s) => s.collections)
   const isLoading = useCollections((s) => s.isLoading)
@@ -915,6 +946,7 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
           onBack={handleBackToList}
           onEdit={() => handleOpenEdit(selectedCollection)}
           onDelete={() => setDeleteTarget(selectedCollection)}
+          onExport={() => handleOpenExport(selectedCollection.id)}
           onOpenPicker={(id, name, color) => {
             setPickerState({ open: true, collectionId: id, collectionName: name, collectionColor: color })
           }}
@@ -951,6 +983,14 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
           onHandleEdit={handleEdit}
           onHandleDelete={handleDelete}
         />
+
+        <ExportCostDialog
+          open={exportDialogOpen}
+          onOpenChange={setExportDialogOpen}
+          collections={collections}
+          galleryItems={galleryItems}
+          preselectedId={exportPreselectedId ?? undefined}
+        />
       </>
     )
   }
@@ -981,6 +1021,17 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
                 className="h-8 w-36 bg-transparent pr-3 pl-8 text-xs text-white placeholder:text-slate-500 focus:outline-none"
               />
             </div>
+            {/* Export button */}
+            {collections.length > 0 && (
+              <button
+                type="button"
+                onClick={() => handleOpenExport()}
+                className="depth-secondary rounded-2xl border border-secondary/15 bg-secondary/10 px-3 py-1.5 text-xs font-medium text-secondary-tint transition hover:bg-secondary/15 hover:text-white"
+              >
+                <Download className="mr-1.5 inline h-3 w-3" />
+                Exportar
+              </button>
+            )}
             {/* Tab navigation */}
             {onSwitchTab && (
               <button
@@ -1060,6 +1111,7 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
                     galleryItems={galleryItems}
                     onEdit={() => handleOpenEdit(collection)}
                     onDelete={() => setDeleteTarget(collection)}
+                    onExport={() => handleOpenExport(collection.id)}
                     onClick={() => handleOpenDetail(collection)}
                   />
                 ))}
@@ -1102,6 +1154,14 @@ export function Collections({ onSwitchTab }: CollectionsProps) {
         onHandleCreate={handleCreate}
         onHandleEdit={handleEdit}
         onHandleDelete={handleDelete}
+      />
+
+      <ExportCostDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        collections={collections}
+        galleryItems={galleryItems}
+        preselectedId={exportPreselectedId ?? undefined}
       />
     </>
   )
