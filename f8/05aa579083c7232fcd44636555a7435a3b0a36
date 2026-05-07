@@ -1,0 +1,28 @@
+src/components/features/collections.tsx
+  s_1cca8ddf5ed83b::t_258d63581ceda6 223-229
+  s_1cca8ddf5ed83b::t_20e3afa6844ad4 275,283
+  s_1cca8ddf5ed83b::t_cea4e0a9ca143a 337-342
+  s_1cca8ddf5ed83b::t_1aadc1a2fa3192 986-993
+  s_1cca8ddf5ed83b::t_9789e05af4c202 1024-1034
+  s_1cca8ddf5ed83b::t_c9a82fb6e5003b 1114
+  s_1cca8ddf5ed83b::t_066afaf07f8e4c 1158-1165
+  s_1cca8ddf5ed83b::t_8fbf848bce0cc1 949
+  s_1cca8ddf5ed83b::t_b2094307aa2da8 784-792
+  s_1cca8ddf5ed83b::t_d5b04d07cc69a7 161,170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "f805aa579083c7232fcd44636555a7435a3b0a36",
+  "prompts": {},
+  "sessions": {
+    "s_1cca8ddf5ed83b": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "c976b327-8fdc-4d23-989c-a905c7f6163a",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912 <carlosglz1912@gmail.com>"
+    }
+  }
+}
