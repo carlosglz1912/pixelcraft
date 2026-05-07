@@ -1,0 +1,20 @@
+src/lib/__tests__/csv-export.test.ts
+  s_44dac942ad7674::t_7abe2fac65ccce 1-44,46-319
+  s_44dac942ad7674::t_6d62bf50dd8356 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "dd85fe4cd6bf3486315586e3b821b6360762d3a6",
+  "prompts": {},
+  "sessions": {
+    "s_44dac942ad7674": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "09f37265-58c4-4f3f-ac39-a3444b1166c5",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912 <carlosglz1912@gmail.com>"
+    }
+  }
+}
