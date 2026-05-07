@@ -1,0 +1,22 @@
+src/components/features/collections.tsx
+  s_187a525f7fe043::t_cf2e31cbc01d8e 659,662-663,665
+  s_187a525f7fe043::t_8509a0f72bf1a8 107
+src/lib/__tests__/csv-export-helpers.test.ts
+  s_187a525f7fe043::t_23791f492fcce3 1-101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "bdaea00da473d57390d221509a26751f60a41146",
+  "prompts": {},
+  "sessions": {
+    "s_187a525f7fe043": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "9c4836cc-e207-4e8a-9ae5-e45d04c7c298",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912 <carlosglz1912@gmail.com>"
+    }
+  }
+}
