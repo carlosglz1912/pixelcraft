@@ -104,7 +104,7 @@ function slugify(text: string): string {
 }
 
 function downloadCSV(csv: string, filename: string): void {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
@@ -656,11 +656,13 @@ function ExportCostDialog({
 
   function handleDownload() {
     if (!result) return
+    const date = new Date().toISOString().slice(0, 10)
     const filename =
       selectedCollections.length === 1
-        ? `costos-${slugify(selectedCollections[0].name)}.csv`
-        : 'costos-colecciones.csv'
+        ? `pixelcraft-${slugify(selectedCollections[0].name)}-${date}.csv`
+        : `pixelcraft-export-${date}.csv`
     downloadCSV(result.csv, filename)
+    toast.success(`CSV exportado (${selectedCollections.length} colección${selectedCollections.length > 1 ? 'es' : ''})`)
     onOpenChange(false)
   }
 
