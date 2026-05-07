@@ -37,10 +37,12 @@ import {
   Sparkles,
   Maximize2,
   PackagePlus,
+  Download,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AnimatePresence, motion, galleryItemVariants } from '@/lib/motion'
 import { getCollectionItems, calculateCollectionCost } from '@/lib/collection-cost'
+import { exportCollectionCostCSV } from '@/lib/csv-export'
 import { formatCostEstimate, formatCostEstimateMxn } from '@/lib/cost-estimate'
 import { AssetPicker } from '@/components/features/asset-picker'
 
@@ -90,6 +92,27 @@ function getMediaFrameClass(
 function getDisplayModel(model: string) {
   if (model === 'upload') return 'Subida por usuario'
   return model.replace(/^fal-ai\//, '')
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+function downloadCSV(csv: string, filename: string): void {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 // ── Color Picker ───────────────────────────────────────────────────
@@ -561,6 +584,157 @@ function CollectionDialogs({
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+// ── Export Cost Dialog ──────────────────────────────────────────────
+
+function ExportCostDialog({
+  open,
+  onOpenChange,
+  collections: allCollections,
+  galleryItems,
+  preselectedId,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  collections: Collection[]
+  galleryItems: GeneratedMedia[]
+  preselectedId?: string
+}) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
+    if (preselectedId) return new Set([preselectedId])
+    return new Set()
+  })
+
+  // Reset selection when dialog opens with a new preselectedId
+  useEffect(() => {
+    if (open) {
+      setSelectedIds(preselectedId ? new Set([preselectedId]) : new Set())
+    }
+  }, [open, preselectedId])
+
+  function toggleCollection(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  // Compute export data
+  const selectedCollections = allCollections.filter((c) => selectedIds.has(c.id))
+  const allItems = selectedCollections.flatMap((c) => getCollectionItems(galleryItems, c))
+  const selectedNames = selectedCollections.map((c) => c.name)
+  const result = selectedIds.size > 0 ? exportCollectionCostCSV(allItems, selectedNames) : null
+
+  function handleDownload() {
+    if (!result) return
+    const filename =
+      selectedCollections.length === 1
+        ? `costos-${slugify(selectedCollections[0].name)}.csv`
+        : 'costos-colecciones.csv'
+    downloadCSV(result.csv, filename)
+    onOpenChange(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="depth-mixed border-secondary/25 bg-slate-950/95 text-white sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-white">Exportar costos</DialogTitle>
+          <DialogDescription className="text-slate-400">
+            Selecciona colecciones para ver y descargar el desglose de costos por modelo.
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Collection selector */}
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary-tint">
+            Colecciones
+          </Label>
+          <div className="flex flex-wrap gap-2">
+            {allCollections.map((collection) => {
+              const colorConfig = COLLECTION_COLORS[collection.color] ?? COLLECTION_COLORS.blue
+              const isSelected = selectedIds.has(collection.id)
+              return (
+                <label
+                  key={collection.id}
+                  className={`flex cursor-pointer items-center gap-2 rounded-2xl border px-3 py-1.5 text-xs font-medium transition ${
+                    isSelected
+                      ? `${colorConfig.bg} ${colorConfig.border} text-white`
+                      : 'border-secondary/15 bg-secondary/10 text-slate-400 hover:border-secondary/25 hover:text-slate-300'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={isSelected}
+                    onChange={() => toggleCollection(collection.id)}
+                  />
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${colorConfig.dot}`} />
+                  <span>{collection.name}</span>
+                  <span className="opacity-50">({collection.itemIds.length})</span>
+                </label>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Preview table */}
+        {result && result.rows.length > 0 ? (
+          <ScrollArea className="flex-1 min-h-0 max-h-[300px]">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-secondary/15 text-left text-slate-400">
+                  <th className="pb-2 pr-4 font-medium">Modelo</th>
+                  <th className="pb-2 pr-4 text-right font-medium">Ejecuciones</th>
+                  <th className="pb-2 text-right font-medium">Costo (USD)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.rows.map((row) => (
+                  <tr key={row.modelId} className="border-b border-secondary/10">
+                    <td className="py-1.5 pr-4 text-white">{row.displayName}</td>
+                    <td className="py-1.5 pr-4 text-right text-slate-300">{row.executions}</td>
+                    <td className="py-1.5 text-right text-slate-300">${row.cost.toFixed(4)}</td>
+                  </tr>
+                ))}
+                <tr className="font-semibold">
+                  <td className="py-2 pr-4 text-white">Total</td>
+                  <td className="py-2 pr-4 text-right text-white">{result.totalExecutions}</td>
+                  <td className="py-2 text-right text-white">${result.totalCost.toFixed(4)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </ScrollArea>
+        ) : selectedIds.size > 0 ? (
+          <p className="py-6 text-center text-sm text-slate-400">Sin datos de costo</p>
+        ) : null}
+
+        <DialogFooter>
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            className="depth-secondary rounded-2xl border border-secondary/15 bg-secondary/10 text-secondary-tint hover:bg-secondary/15 hover:text-white"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleDownload}
+            disabled={selectedIds.size === 0 || !result || result.rows.length === 0}
+            className="depth-primary rounded-2xl border border-primary/25 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Descargar CSV
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
