@@ -130,6 +130,7 @@ export function AppTabs() {
         <SidebarHeader
           sidebarCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+          onOpenConfig={() => setConfigOpen(true)}
         />
         <StudioModeSelector
           studioMode={studioMode}
