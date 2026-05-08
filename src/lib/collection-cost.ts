@@ -1,4 +1,5 @@
 import type { Collection, CostTier, GeneratedMedia } from '@/types'
+import { estimateImageGenerationCost, estimateVideoGenerationCost } from '@/lib/cost-estimate'
 
 const COST_TIER_FALLBACKS: Record<CostTier, number> = {
   free: 0,
@@ -28,8 +29,41 @@ export function getCollectionItems(
 }
 
 /**
+ * Attempts to recalculate cost from model + metadata.
+ * Returns null when insufficient information is available.
+ */
+function recalculateCost(item: GeneratedMedia): number | null {
+  const model = item.model ?? ''
+  const meta = item.metadata
+
+  const imageEstimate = estimateImageGenerationCost({
+    model,
+    imageSize: meta?.imageSize,
+    resolution: meta?.imageResolution ?? meta?.resolution,
+    numImages: 1,
+    style: meta?.imageStyle,
+    quality: meta?.imageQuality,
+  })
+  if (imageEstimate != null) return imageEstimate.amount
+
+  const videoEstimate = estimateVideoGenerationCost({
+    model,
+    mode: meta?.videoMode ?? 'image-to-video',
+    duration: meta?.duration,
+    resolution: meta?.resolution,
+    aspectRatio: meta?.aspectRatio,
+    generateAudio: false,
+    numFrames: meta?.numFrames,
+  })
+  if (videoEstimate != null) return videoEstimate.amount
+
+  return null
+}
+
+/**
  * Calculates the total USD cost of a set of gallery items.
- * Uses estimatedCost from metadata when available, falls back to costTier.
+ * Uses estimatedCost from metadata when available, then tries to recalculate
+ * from model + metadata, then falls back to costTier.
  * Returns USD total plus a per-item breakdown.
  */
 export function calculateCollectionCost(items: GeneratedMedia[]): {
@@ -41,15 +75,24 @@ export function calculateCollectionCost(items: GeneratedMedia[]): {
   }
 
   const breakdown = items.map((item) => {
+    // 1. Stored estimatedCost
     const estimatedCost = item.metadata?.estimatedCost
-    const cost =
-      estimatedCost != null && estimatedCost > 0
-        ? estimatedCost
-        : item.costTier
-          ? getCostTierFallback(item.costTier)
-          : 0
+    if (estimatedCost != null && estimatedCost > 0) {
+      return { itemId: item.id, cost: estimatedCost }
+    }
 
-    return { itemId: item.id, cost }
+    // 2. Recalculate from model + metadata
+    const recalculated = recalculateCost(item)
+    if (recalculated != null && recalculated > 0) {
+      return { itemId: item.id, cost: recalculated }
+    }
+
+    // 3. costTier fallback
+    if (item.costTier) {
+      return { itemId: item.id, cost: getCostTierFallback(item.costTier) }
+    }
+
+    return { itemId: item.id, cost: 0 }
   })
 
   const totalUsd = breakdown.reduce((sum, entry) => sum + entry.cost, 0)

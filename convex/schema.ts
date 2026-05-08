@@ -19,6 +19,7 @@ export default defineSchema({
     aspectRatio: v.optional(v.string()),
     resolution: v.optional(v.string()),
     costTier: v.optional(v.string()),
+    estimatedCost: v.optional(v.number()),
     
     createdAt: v.number(),
     userId: v.optional(v.string()),

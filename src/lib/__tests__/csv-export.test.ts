@@ -120,15 +120,17 @@ describe('groupItemsByModel', () => {
     expect(rows[0].cost).toBe(0.05)
   })
 
-  it('uses costTier fallback when estimatedCost is absent', () => {
+  it('recalculates cost from model when estimatedCost is absent', () => {
+    // flux/dev recalculated: $0.025/MP × 1 MP (default) = $0.025
     const items = [makeMedia({ id: 'a', model: 'flux/dev', costTier: 'high' })]
 
     const rows = groupItemsByModel(items)
-    expect(rows[0].cost).toBe(0.15) // high tier fallback
+    expect(rows[0].cost).toBe(0.025)
   })
 
-  it('returns cost 0 when neither estimatedCost nor costTier is present', () => {
-    const items = [makeMedia({ id: 'a', model: 'flux/dev' })]
+  it('returns cost 0 when model is unknown and no estimatedCost', () => {
+    // 'upload' model has no estimate function
+    const items = [makeMedia({ id: 'a', model: 'upload' })]
 
     const rows = groupItemsByModel(items)
     expect(rows[0].cost).toBe(0)

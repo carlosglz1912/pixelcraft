@@ -92,6 +92,7 @@ export interface PersistedMedia {
   aspectRatio?: string
   resolution?: string
   costTier?: string
+  estimatedCost?: number
   createdAt: number
   userId?: string
 }

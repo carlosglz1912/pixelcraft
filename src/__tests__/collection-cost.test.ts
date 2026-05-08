@@ -106,41 +106,46 @@ describe('calculateCollectionCost', () => {
     expect(result.breakdown[1].cost).toBe(0.10)
   })
 
-  it('falls back to costTier when estimatedCost is missing', () => {
+  it('recalculates cost from model when estimatedCost is missing', () => {
+    // flux/dev model → estimateImageGenerationCost → $0.025/MP × 1 MP (default) = $0.025
     const items: GeneratedMedia[] = [
       makeMedia({
         id: 'item-1',
+        model: 'flux/dev',
         costTier: 'high',
       }),
     ]
 
     const result = calculateCollectionCost(items)
-    expect(result.totalUsd).toBe(getCostTierFallback('high'))
+    expect(result.totalUsd).toBe(0.025)
     expect(result.breakdown).toHaveLength(1)
   })
 
-  it('falls back to costTier when estimatedCost is 0', () => {
+  it('recalculates cost from model when estimatedCost is 0', () => {
+    // flux/dev with estimatedCost=0 triggers recalculation → $0.025
     const items: GeneratedMedia[] = [
       makeMedia({
         id: 'item-1',
+        model: 'flux/dev',
         costTier: 'medium',
         metadata: { estimatedCost: 0 },
       }),
     ]
 
     const result = calculateCollectionCost(items)
-    expect(result.totalUsd).toBe(getCostTierFallback('medium'))
+    expect(result.totalUsd).toBe(0.025)
   })
 
-  it('returns 0 cost when no estimatedCost and no costTier', () => {
-    const items: GeneratedMedia[] = [makeMedia({ id: 'item-1' })]
+  it('returns 0 cost when model is unknown and no estimatedCost', () => {
+    // 'upload' model has no estimate function → returns null → 0
+    const items: GeneratedMedia[] = [makeMedia({ id: 'item-1', model: 'upload' })]
 
     const result = calculateCollectionCost(items)
     expect(result.totalUsd).toBe(0)
     expect(result.breakdown[0].cost).toBe(0)
   })
 
-  it('handles mixed items with estimatedCost and costTier fallback', () => {
+  it('handles mixed items with estimatedCost, recalculation, and costTier fallback', () => {
     const items: GeneratedMedia[] = [
       makeMedia({
         id: 'item-1',
@@ -148,6 +153,7 @@ describe('calculateCollectionCost', () => {
       }),
       makeMedia({
         id: 'item-2',
+        model: 'flux/dev',
         costTier: 'low',
       }),
       makeMedia({
@@ -158,8 +164,8 @@ describe('calculateCollectionCost', () => {
     ]
 
     const result = calculateCollectionCost(items)
-    // item-1: 0.03, item-2: fallback low = 0.01, item-3: 0.50 (estimatedCost takes priority)
-    expect(result.totalUsd).toBe(0.54)
+    // item-1: 0.03 (stored), item-2: recalculated flux/dev = 0.025, item-3: 0.50 (stored)
+    expect(result.totalUsd).toBe(0.555)
     expect(result.breakdown).toHaveLength(3)
   })
 })

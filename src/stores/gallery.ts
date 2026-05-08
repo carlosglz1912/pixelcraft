@@ -109,6 +109,7 @@ function persistedMediaToGalleryItem(media: PersistedMedia): GeneratedMedia {
       storageId: media.storageId,
       persisted: true,
       userId: media.userId,
+      estimatedCost: media.estimatedCost,
       seed: media.seed,
       duration: media.duration != null ? String(media.duration) : undefined,
       aspectRatio: media.aspectRatio,
@@ -294,6 +295,7 @@ export const useGallery = create<GalleryState>()(
             prompt: item.prompt,
             model: item.model,
             costTier: item.costTier,
+            estimatedCost: item.metadata?.estimatedCost,
             userId,
             metadata: {
               seed: item.metadata?.seed,
@@ -430,6 +432,7 @@ export const useGallery = create<GalleryState>()(
             prompt: item.prompt,
             model: item.model,
             costTier: item.costTier,
+            estimatedCost: item.metadata?.estimatedCost,
             userId,
             metadata: {
               seed: item.metadata?.seed,

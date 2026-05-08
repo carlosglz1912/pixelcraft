@@ -11,6 +11,11 @@ import {
   BG_REMOVAL_MODELS,
 } from '@/types'
 import { getCostTierFallback } from '@/lib/collection-cost'
+import {
+  estimateImageGenerationCost,
+  estimateVideoGenerationCost,
+  estimateImageTransformCost,
+} from '@/lib/cost-estimate'
 
 /** A single row in the cost-per-model breakdown. */
 export interface ModelCostRow {
@@ -72,18 +77,74 @@ export function getModelDisplayName(modelId: string): string {
 }
 
 /**
+ * Attempts to recalculate cost from model + metadata using the estimate functions.
+ * Returns null when there isn't enough information to produce an estimate.
+ */
+function recalculateCost(item: GeneratedMedia): number | null {
+  const model = item.model ?? ''
+  const meta = item.metadata
+
+  // Image generation
+  const imageEstimate = estimateImageGenerationCost({
+    model,
+    imageSize: meta?.imageSize,
+    resolution: meta?.imageResolution ?? meta?.resolution,
+    numImages: 1,
+    style: meta?.imageStyle,
+    quality: meta?.imageQuality,
+  })
+  if (imageEstimate != null) return imageEstimate.amount
+
+  // Image transform (upscale, etc.)
+  const transformEstimate = estimateImageTransformCost({
+    model,
+    width: undefined,
+    height: undefined,
+  })
+  if (transformEstimate != null) return transformEstimate.amount
+
+  // Video generation
+  const duration = meta?.duration ?? meta?.aspectRatio
+  const videoEstimate = estimateVideoGenerationCost({
+    model,
+    mode: meta?.videoMode ?? 'image-to-video',
+    duration,
+    resolution: meta?.resolution,
+    aspectRatio: meta?.aspectRatio,
+    generateAudio: false,
+    numFrames: meta?.numFrames,
+  })
+  if (videoEstimate != null) return videoEstimate.amount
+
+  return null
+}
+
+/**
  * Resolves the USD cost for a single gallery item.
- * Uses the same resolution strategy as collection-cost.ts:
- *   estimatedCost from metadata → costTier fallback → 0
+ * Resolution strategy:
+ *   1. estimatedCost from metadata (stored at generation time)
+ *   2. Recalculate from model + metadata parameters
+ *   3. costTier fallback
+ *   4. 0
  */
 function resolveItemCost(item: GeneratedMedia): number {
+  // 1. Stored estimatedCost
   const estimatedCost = item.metadata?.estimatedCost
   if (estimatedCost != null && estimatedCost > 0) {
     return estimatedCost
   }
+
+  // 2. Recalculate from model + metadata
+  const recalculated = recalculateCost(item)
+  if (recalculated != null && recalculated > 0) {
+    return recalculated
+  }
+
+  // 3. costTier fallback
   if (item.costTier) {
     return getCostTierFallback(item.costTier)
   }
+
   return 0
 }
 

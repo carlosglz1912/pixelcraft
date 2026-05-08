@@ -10,6 +10,7 @@ interface PersistMediaOptions {
   prompt: string
   model: string
   costTier?: CostTier
+  estimatedCost?: number
   userId?: string
   metadata?: {
     seed?: number
@@ -64,6 +65,7 @@ interface PersistRequestPayload {
     modelId: string
     prompt: string
     costTier?: CostTier
+    estimatedCost?: number
     seed?: number
     duration?: number
     aspectRatio?: string
@@ -115,6 +117,7 @@ function buildPersistPayload(options: PersistMediaOptions, fileName: string): Pe
       modelId: options.model,
       prompt: options.prompt,
       costTier: options.costTier,
+      estimatedCost: options.estimatedCost,
       seed: options.metadata?.seed,
       duration: options.metadata?.duration,
       aspectRatio: options.metadata?.aspectRatio,
