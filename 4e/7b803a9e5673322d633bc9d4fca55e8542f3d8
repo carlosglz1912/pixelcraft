@@ -1,0 +1,19 @@
+src/components/layout/app-tabs.tsx
+  s_8e1192020de994::t_3c23e345fdd87e 133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "4e7b803a9e5673322d633bc9d4fca55e8542f3d8",
+  "prompts": {},
+  "sessions": {
+    "s_8e1192020de994": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "762d742b-e3fe-49db-a142-ab06687678b6",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912 <carlosglz1912@gmail.com>"
+    }
+  }
+}
