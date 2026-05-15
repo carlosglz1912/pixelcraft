@@ -71,6 +71,8 @@ import {
   RotateCcw,
   X,
   Check,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AnimatePresence, motion, galleryItemVariants } from "@/lib/motion";
@@ -266,6 +268,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
   >(null);
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "type">("newest");
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [zoom, setZoom] = useState(2); // 1 = small, 2 = default, 3 = large
 
   const router = useRouter();
   const items = useGallery((state) => state.items);
@@ -321,6 +324,16 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
     }
     return sorted;
   }, [items, sortBy]);
+
+  // Zoom controls: 1 = compact (140px), 2 = default (280px), 3 = large (480px)
+  const zoomConfig = useMemo(() => {
+    const configs: Record<number, { minCol: number; label: string }> = {
+      1: { minCol: 140, label: "Compacto" },
+      2: { minCol: 280, label: "Normal" },
+      3: { minCol: 480, label: "Grande" },
+    };
+    return configs[zoom] ?? configs[2];
+  }, [zoom]);
 
   useEffect(() => {
     const staleIds = pendingItems
@@ -659,7 +672,7 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
 
   return (
     <>
-      <div className="flex h-full flex-col">
+      <div className="relative flex h-full flex-col">
         <div className="surface-secondary flex items-center justify-between gap-3 border-b border-secondary/20 px-5 py-4">
           <div className="flex min-w-0 items-center gap-2">
             <Badge
@@ -784,7 +797,12 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
           </div>
         ) : (
           <ScrollArea className="h-[calc(100vh-4.75rem)] h-[calc(100dvh-4.75rem)]">
-            <div className="grid auto-rows-auto grid-cols-[repeat(auto-fill,minmax(280px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 p-5">
+            <div
+              className="grid auto-rows-auto gap-4 p-5 transition-[grid-template-columns] duration-300 ease-out"
+              style={{
+                gridTemplateColumns: `repeat(auto-fill, minmax(${zoomConfig.minCol}px, 1fr))`,
+              }}
+            >
               {pendingItems.map((item) =>
                 item.status === "failed" ? (
                   <FailedGalleryCard key={item.id} item={item} />
@@ -872,6 +890,47 @@ export function Gallery({ onSwitchTab }: GalleryProps) {
               </AnimatePresence>
             </div>
           </ScrollArea>
+        )}
+
+        {/* Zoom control */}
+        {items.length > 0 && (
+          <div className="pointer-events-none absolute right-5 bottom-5 z-30 flex items-center">
+            <div className="pointer-events-auto depth-mixed flex items-center gap-2 rounded-2xl border border-secondary/20 bg-slate-950/90 px-3 py-2 shadow-lg backdrop-blur-md">
+              <button
+                type="button"
+                onClick={() => setZoom(Math.max(1, zoom - 1))}
+                disabled={zoom <= 1}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-secondary-tint transition hover:bg-secondary/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-secondary-tint"
+                aria-label="Reducir tamaño"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </button>
+              <div className="flex items-center gap-1.5">
+                {[1, 2, 3].map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setZoom(level)}
+                    className={`h-2 rounded-full transition-all duration-200 ${
+                      level === zoom
+                        ? "w-6 bg-primary-tint"
+                        : "w-2 bg-secondary/40 hover:bg-secondary/60"
+                    }`}
+                    aria-label={`Zoom nivel ${level}`}
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setZoom(Math.min(3, zoom + 1))}
+                disabled={zoom >= 3}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-secondary-tint transition hover:bg-secondary/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-secondary-tint"
+                aria-label="Aumentar tamaño"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
