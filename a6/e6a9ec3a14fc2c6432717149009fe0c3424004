@@ -1,0 +1,24 @@
+src/components/features/gallery.tsx
+  s_3afe269512a821::t_ef38c1f0aeb08b 271
+  s_3afe269512a821::t_27a15e0daa96c4 675
+  s_3afe269512a821::t_651fbd03d234a1 328-337
+  s_3afe269512a821::t_571aba27180e4e 800-805
+  s_3afe269512a821::t_4ed680835b56ce 894-934
+  s_3afe269512a821::t_348452982d8e49 74-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "a6e6a9ec3a14fc2c6432717149009fe0c3424004",
+  "prompts": {},
+  "sessions": {
+    "s_3afe269512a821": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "df8a78ac-21ee-4b07-9777-7d6284260ac2",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912 <carlosglz1912@gmail.com>"
+    }
+  }
+}
