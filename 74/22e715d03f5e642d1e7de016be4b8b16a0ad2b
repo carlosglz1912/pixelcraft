@@ -1,0 +1,20 @@
+src/components/features/model-config.tsx
+  s_3953dabc02bfc1::t_e35e382d2284dc 116-119,121-123,134,155,163-164
+  s_3953dabc02bfc1::t_7ecd9b91a5d4ff 223,225-227
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "7422e715d03f5e642d1e7de016be4b8b16a0ad2b",
+  "prompts": {},
+  "sessions": {
+    "s_3953dabc02bfc1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1d6f22594ffeNIjWu62Np2nXo2",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912 <carlosglz1912@gmail.com>"
+    }
+  }
+}
