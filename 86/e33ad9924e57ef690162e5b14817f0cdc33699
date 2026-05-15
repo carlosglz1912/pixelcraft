@@ -1,0 +1,62 @@
+src/components/features/image-conversation.tsx
+  s_6aba60773fffb4::t_6e807eea33d63f 580-581,594-596
+  s_6aba60773fffb4::t_912ac83a9d01f1 357-379
+  s_6aba60773fffb4::t_f321a30c414d5f 164
+  s_6aba60773fffb4::t_8f0c3f24544e9e 207
+  s_6aba60773fffb4::t_73a963f8bcbb41 3,11
+  s_6aba60773fffb4::t_8ff1fbcbeda5ea 471,476-477,484,506
+  s_6aba60773fffb4::t_6041762eff9d17 6,23
+  s_6aba60773fffb4::t_c55b995cf4fa19 280
+  s_6aba60773fffb4::t_5ec3984227aaa3 178,180-181,183-184,187-193
+  s_6aba60773fffb4::t_0e544a90c9604c 603-616
+  s_6aba60773fffb4::t_e3bcd9b1fbe354 16-22,34-39,42-74,78-83,87,91-104,106-110,112-116,119,122-128,131,133-134,138,141,144-151
+  s_6aba60773fffb4::t_c74088e7cb1082 472-475,478-483,485-505,507-508,517-518,520-521
+  s_6aba60773fffb4::t_c680d22128f0f7 165
+  s_6aba60773fffb4::t_c32b08c19697c7 509-516
+  s_6aba60773fffb4::t_d9f01d56891e4d 163,166-168,171,173,175-177,196-206,208-220,222-231
+  s_6aba60773fffb4::t_9096e5f505b58c 448-468
+  s_6aba60773fffb4::t_ad4ce7206ad8dd 337-339,381-386,391-397,403-407,410-415,419,529,532-534,557-564
+  s_6aba60773fffb4::t_01fa9f1c800e87 308
+src/components/features/gallery.tsx
+  a28a38e697a4a09e 415-419
+  s_b8eb3619c7cea1::t_8b2e9f1007475d 398
+  s_b8eb3619c7cea1::t_d049d43207e0e0 381
+  s_b8eb3619c7cea1::t_c15466587fb2dd 629
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "86e33ad9924e57ef690162e5b14817f0cdc33699",
+  "prompts": {
+    "a28a38e697a4a09e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_2152f864bffeLAgUPYiaKwCNmj",
+        "model": "zai-coding-plan/glm-5.1"
+      },
+      "human_author": null,
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  },
+  "sessions": {
+    "s_6aba60773fffb4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1d6e907eeffeSMdRojpIOiAEnX",
+        "model": "glm-5.1"
+      },
+      "human_author": "carlosglz1912 <carlosglz1912@gmail.com>"
+    },
+    "s_b8eb3619c7cea1": {
+      "agent_id": {
+        "tool": "droid",
+        "id": "4d32cc58-d431-4def-8362-5784d57fb9f8",
+        "model": "custom:GLM-5.1-(BYOK)-2"
+      },
+      "human_author": "carlosglz1912 <carlosglz1912@gmail.com>"
+    }
+  }
+}
