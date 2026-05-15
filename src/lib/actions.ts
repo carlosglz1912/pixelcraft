@@ -1,7 +1,7 @@
 'use server'
 
 import { fal } from '@fal-ai/client'
-import { getVideoEndpoint, type VideoGenerationMode } from '@/types'
+import { getVideoEndpoint, getVideoModelConfig, type VideoGenerationMode } from '@/types'
 import type { 
   FalImageOutput, 
   FalVideoOutput,
@@ -100,11 +100,14 @@ function resolveVideoModel(config: Pick<VideoGenerationConfig, 'model' | 'mode'>
     throw new Error(`Unsupported video model: ${requestedModel}`)
   }
 
+  const modelConfig = getVideoModelConfig(requestedModel)
+  const endpoint = modelConfig?.falEndpoint || `fal-ai/${resolvedModel}`
+
   return {
     requestedModel,
     mode,
     resolvedModel,
-    endpoint: `fal-ai/${resolvedModel}`,
+    endpoint,
   }
 }
 
@@ -157,6 +160,7 @@ function buildVideoInput(config: VideoGenerationConfig, endpoint: string) {
   if (endpoint === 'fal-ai/kling-video/v3/pro/image-to-video') {
     if (config.imageUrl) input.start_image_url = config.imageUrl
     if (!usesMultiPrompt && config.duration) input.duration = config.duration
+    if (config.aspectRatio) input.aspect_ratio = config.aspectRatio
     if (config.generateAudio !== undefined) input.generate_audio = config.generateAudio
     if (config.endImageUrl) input.end_image_url = config.endImageUrl
     if (config.negativePrompt) input.negative_prompt = config.negativePrompt
@@ -189,6 +193,7 @@ function buildVideoInput(config: VideoGenerationConfig, endpoint: string) {
     if (config.resolution) input.resolution = config.resolution
     if (config.generateAudio !== undefined) input.generate_audio = config.generateAudio
     if (config.endImageUrl) input.end_image_url = config.endImageUrl
+    if (config.seed !== undefined) input.seed = config.seed
   } else if (endpoint.includes('veo3.1')) {
     if (prompt) input.prompt = prompt
     if (config.imageUrl) input.image_url = config.imageUrl
@@ -458,6 +463,7 @@ export async function generateImage(config: {
   guidanceScale?: number
   numInferenceSteps?: number
   imageUrl?: string
+  imageUrlsJson?: string
   imagePromptStrength?: number
   style?: string
   colors?: string[]
@@ -466,10 +472,30 @@ export async function generateImage(config: {
   const normalizedModel = model.replace(/^fal-ai\//, '')
   const normalizedSteps = normalizeImageInferenceSteps(model, config.numInferenceSteps)
 
-  if (normalizedModel === 'nano-banana-2' && config.imageUrl) {
+  if (normalizedModel === 'openai/gpt-image-2') {
     const input: Record<string, unknown> = {
       prompt: config.prompt,
-      image_urls: [config.imageUrl],
+    }
+
+    if (config.imageSize) input.image_size = config.imageSize
+    if (config.numImages !== undefined) input.num_images = config.numImages
+    if (config.outputFormat) input.output_format = config.outputFormat
+    if (config.quality) input.quality = config.quality
+
+    const result = await fal.subscribe('openai/gpt-image-2', { input })
+    return result.data as FalImageOutput
+  }
+
+  if (normalizedModel === 'nano-banana-2' && (config.imageUrl || config.imageUrlsJson)) {
+    const parsedUrls = config.imageUrlsJson ? JSON.parse(config.imageUrlsJson) as string[] : []
+    const imageUrls = [
+      ...(config.imageUrl ? [config.imageUrl] : []),
+      ...parsedUrls,
+    ]
+
+    const input: Record<string, unknown> = {
+      prompt: config.prompt,
+      image_urls: imageUrls,
     }
 
     if (config.aspectRatio) input.aspect_ratio = config.aspectRatio
@@ -625,11 +651,32 @@ export async function editImage(config: {
   strength?: number
   model?: string
   referenceImageUrls?: string[]
+  quality?: string
+  numImages?: number
+  outputFormat?: string
+  maskUrl?: string
 }) {
   const rawModel = config.model || 'fal-ai/flux/dev/image-to-image'
   
   if (
-    rawModel === 'nano-banana-2' ||
+    rawModel === 'openai/gpt-image-2/edit' ||
+    rawModel === 'fal-ai/openai/gpt-image-2/edit'
+  ) {
+    const input: Record<string, unknown> = {
+      prompt: config.prompt,
+      image_urls: [config.imageUrl, ...(config.referenceImageUrls ?? [])],
+    }
+
+    if (config.quality) input.quality = config.quality
+    if (config.numImages !== undefined) input.num_images = config.numImages
+    if (config.outputFormat) input.output_format = config.outputFormat
+    if (config.maskUrl) input.mask_url = config.maskUrl
+
+    const result = await fal.subscribe('openai/gpt-image-2/edit', { input })
+    return result.data as FalImageOutput
+  }
+
+  if (
     rawModel === 'fal-ai/nano-banana-2' ||
     rawModel === 'nano-banana-2/edit' ||
     rawModel === 'fal-ai/nano-banana-2/edit'

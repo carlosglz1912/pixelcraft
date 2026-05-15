@@ -27,7 +27,7 @@ export interface GenerationMetadata {
   sourceId?: string
   source?: string
   strength?: number
-  references?: string[]
+  referenceCount?: number
   storageId?: string
   persisted?: boolean
   negativePrompt?: string
@@ -70,6 +70,8 @@ export interface PendingMedia {
     | 'negativePrompt'
   >
   createdAt: Date
+  status?: 'pending' | 'failed'
+  error?: string
 }
 
 export interface PersistedMedia {
@@ -90,6 +92,7 @@ export interface PersistedMedia {
   aspectRatio?: string
   resolution?: string
   costTier?: string
+  estimatedCost?: number
   createdAt: number
   userId?: string
 }
@@ -107,6 +110,38 @@ export interface GenerationConfig {
 export type OperationType = 'text-to-image' | 'image-to-video' | 'edit-image' | 'upscale' | 'remove-background'
 
 export type CostTier = 'free' | 'low' | 'medium' | 'high' | 'premium'
+
+export type CollectionColor =
+  | 'red'
+  | 'orange'
+  | 'yellow'
+  | 'green'
+  | 'blue'
+  | 'purple'
+  | 'pink'
+  | 'gray'
+
+export interface Collection {
+  id: string
+  name: string
+  description?: string
+  itemIds: string[]
+  coverImageId?: string
+  color: CollectionColor
+  createdAt: Date
+  updatedAt: Date
+}
+
+export const COLLECTION_COLORS: Record<CollectionColor, { value: CollectionColor; label: string; bg: string; border: string; dot: string }> = {
+  red:    { value: 'red',    label: 'Rojo',    bg: 'bg-red-500/15',    border: 'border-red-500/30',    dot: 'bg-red-500' },
+  orange: { value: 'orange', label: 'Naranja', bg: 'bg-orange-500/15', border: 'border-orange-500/30', dot: 'bg-orange-500' },
+  yellow: { value: 'yellow', label: 'Amarillo', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30', dot: 'bg-yellow-500' },
+  green:  { value: 'green',  label: 'Verde',   bg: 'bg-green-500/15',  border: 'border-green-500/30',  dot: 'bg-green-500' },
+  blue:   { value: 'blue',   label: 'Azul',    bg: 'bg-blue-500/15',   border: 'border-blue-500/30',   dot: 'bg-blue-500' },
+  purple: { value: 'purple', label: 'Púrpura', bg: 'bg-purple-500/15', border: 'border-purple-500/30', dot: 'bg-purple-500' },
+  pink:   { value: 'pink',   label: 'Rosa',    bg: 'bg-pink-500/15',   border: 'border-pink-500/30',   dot: 'bg-pink-500' },
+  gray:   { value: 'gray',   label: 'Gris',    bg: 'bg-slate-500/15',  border: 'border-slate-500/30',  dot: 'bg-slate-500' },
+}
 
 export function getCostTierLabel(costTier?: CostTier): string | null {
   if (!costTier) return null
@@ -130,6 +165,7 @@ export type ImageModelSupport =
   | 'num_inference_steps'
   | 'seed'
   | 'reference_image'
+  | 'reference_images'
   | 'image_prompt_strength'
   | 'style'
   | 'colors'
@@ -138,6 +174,7 @@ export interface ModelInfo {
   description: string
   tips?: string[]
   bestFor?: string[]
+  warnings?: string[]
 }
 
 export interface ImageModelConfig {
@@ -222,7 +259,7 @@ export const IMAGE_MODEL_FAMILIES: Record<string, ImageModelFamily> = {
   recraft: {
     name: 'Recraft',
     models: {
-      'recraft/v3': { 
+      'recraft-v3': { 
         name: 'V3', 
         supports: ['image_size', 'style', 'colors'] as const,
         costTier: 'medium',
@@ -274,6 +311,21 @@ export const IMAGE_MODEL_FAMILIES: Record<string, ImageModelFamily> = {
           bestFor: ['Prompt adherence', 'Texto en imagen', 'Ads', 'Producto']
         }
       },
+      'openai/gpt-image-2': {
+        name: 'GPT Image 2',
+        supports: ['image_size', 'num_images', 'output_format', 'quality'] as const,
+        costTier: 'premium',
+        info: {
+          description: 'Ultimo modelo de imagen de OpenAI. Imagenes extremadamente detalladas con tipografia fina y alta adherencia al prompt.',
+          tips: [
+            'Usa quality high para piezas finales',
+            'Destaca por texto legible dentro de la imagen',
+            'Funciona especialmente bien con prompts muy especificos',
+            'Soporta hasta 4 imagenes por batch'
+          ],
+          bestFor: ['Prompt adherence', 'Texto en imagen', 'Detalle extremo', 'Fotorealismo']
+        }
+      },
     },
   },
   google: {
@@ -295,7 +347,7 @@ export const IMAGE_MODEL_FAMILIES: Record<string, ImageModelFamily> = {
       },
       'nano-banana-2': {
         name: 'Nano Banana 2',
-        supports: ['aspect_ratio', 'resolution', 'num_images', 'output_format', 'seed', 'reference_image'] as const,
+        supports: ['aspect_ratio', 'resolution', 'num_images', 'output_format', 'seed', 'reference_images'] as const,
         costTier: 'high',
         info: {
           description: 'La variante mas fuerte de la familia Nano Banana. Mejora calidad, costo por resultado y detalle frente a la version base.',
@@ -390,6 +442,7 @@ export interface VideoModelConfig {
   name: string
   supports: readonly VideoModelSupport[]
   textToVideoModel?: string
+  falEndpoint?: string
   info?: ModelInfo
   costTier?: CostTier
 }
@@ -511,6 +564,25 @@ export const VIDEO_MODEL_FAMILIES: Record<string, VideoModelFamily> = {
             'End frame para transiciones'
           ],
           bestFor: ['Contenido profesional', 'Control fino', 'Calidad']
+        }
+      },
+      'bytedance/seedance-2.0/image-to-video': { 
+        name: 'Seedance 2.0', 
+        supports: ['duration', 'aspect_ratio', 'resolution', 'end_image', 'audio', 'seed'] as const,
+        falEndpoint: 'bytedance/seedance-2.0/image-to-video',
+        costTier: 'premium',
+        info: {
+          description: 'El modelo más avanzado de ByteDance para image-to-video. Video cinematográfico con audio sincronizado, control de start/end frame y motion prompts.',
+          tips: [
+            'Hasta 15s de duración',
+            'Audio sincronizado con lip-sync',
+            'Control de start y end frame',
+            'Resolución 480p-1080p',
+            'Soporta "auto" para duración y aspecto',
+            'NO funciona bien con fotos de personas como referencia'
+          ],
+          bestFor: ['Video cinematográfico', 'Audio sincronizado', 'Lip-sync', 'Control de frames'],
+          warnings: ['Este modelo no funciona bien con imágenes de personas como referencia. Usa paisajes, objetos o escenas sin rostros para mejores resultados.']
         }
       },
     },
@@ -639,7 +711,7 @@ export function getVideoEffectiveSupports(
 ): readonly VideoModelSupport[] {
   if (modelId === 'kling-video/v3/pro/image-to-video') {
     return mode === 'image-to-video'
-      ? (['duration', 'cfg_scale', 'negative_prompt', 'end_image', 'audio', 'multi_prompt', 'elements'] as const)
+      ? (['duration', 'cfg_scale', 'negative_prompt', 'end_image', 'aspect_ratio', 'audio', 'multi_prompt', 'elements'] as const)
       : (['duration', 'cfg_scale', 'negative_prompt', 'aspect_ratio', 'audio', 'multi_prompt'] as const)
   }
 
@@ -654,6 +726,7 @@ export function getVideoEffectiveSupports(
 
 const VIDEO_DURATIONS_KLING = ['3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'] as const
 const VIDEO_DURATIONS_SEEDANCE = ['4', '5', '6', '7', '8', '9', '10', '11', '12'] as const
+const VIDEO_DURATIONS_SEEDANCE_2 = ['auto', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'] as const
 const VIDEO_DURATIONS_VEO = ['4', '6', '8'] as const
 const VIDEO_DURATIONS_SORA = ['4', '8', '12'] as const
 const VIDEO_DURATIONS_NONE = [] as const
@@ -664,6 +737,7 @@ export function canGenerateVideoFromPromptOnly(modelId: string): boolean {
 
 export function getVideoDurations(modelId: string): readonly string[] {
   if (modelId.includes('kling')) return VIDEO_DURATIONS_KLING
+  if (modelId.includes('seedance-2.0')) return VIDEO_DURATIONS_SEEDANCE_2
   if (modelId.includes('seedance')) return VIDEO_DURATIONS_SEEDANCE
   if (modelId.includes('veo')) return VIDEO_DURATIONS_VEO
   if (modelId.includes('sora')) return VIDEO_DURATIONS_SORA
@@ -673,11 +747,15 @@ export function getVideoDurations(modelId: string): readonly string[] {
 const VIDEO_ASPECT_RATIOS_DEFAULT = ['16:9', '9:16', '1:1'] as const
 const VIDEO_ASPECT_RATIOS_AUTO_WIDE = ['auto', '16:9', '9:16'] as const
 const VIDEO_ASPECT_RATIOS_AUTO_DEFAULT = ['auto', '16:9', '9:16', '1:1'] as const
+const VIDEO_ASPECT_RATIOS_SEEDANCE_2 = ['auto', '21:9', '16:9', '4:3', '1:1', '3:4', '9:16'] as const
 
 export function getVideoAspectRatios(
   modelId: string,
   mode: VideoGenerationMode
 ): readonly string[] {
+  if (modelId.includes('seedance-2.0')) {
+    return VIDEO_ASPECT_RATIOS_SEEDANCE_2
+  }
   if (modelId.includes('veo')) {
     return mode === 'image-to-video' ? VIDEO_ASPECT_RATIOS_AUTO_WIDE : ['16:9', '9:16']
   }

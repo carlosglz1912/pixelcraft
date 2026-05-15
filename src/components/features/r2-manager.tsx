@@ -23,9 +23,9 @@ import {
   Cloud,
   AlertTriangle,
   CheckCircle2,
-  Loader2,
   Copy,
   ImagePlus,
+  FolderOpen,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -56,7 +56,7 @@ interface DuplicateGroup {
 }
 
 interface R2ManagerProps {
-  onSwitchTab?: (tab: 'gallery' | 'storage') => void
+  onSwitchTab?: (tab: 'gallery' | 'storage' | 'collections') => void
 }
 
 export function R2Manager({ onSwitchTab }: R2ManagerProps) {
@@ -167,6 +167,16 @@ export function R2Manager({ onSwitchTab }: R2ManagerProps) {
           {onSwitchTab && (
             <button
               type="button"
+              onClick={() => onSwitchTab('collections')}
+              className="depth-secondary rounded-2xl border border-secondary/15 bg-secondary/10 px-3 py-1.5 text-xs font-medium text-secondary-tint transition hover:bg-secondary/15 hover:text-white"
+            >
+              <FolderOpen className="mr-1.5 inline h-3 w-3" />
+              Colecciones
+            </button>
+          )}
+          {onSwitchTab && (
+            <button
+              type="button"
               onClick={() => onSwitchTab('gallery')}
               className="depth-secondary rounded-2xl border border-secondary/15 bg-secondary/10 px-3 py-1.5 text-xs font-medium text-secondary-tint transition hover:bg-secondary/15 hover:text-white"
             >
@@ -243,7 +253,7 @@ export function R2Manager({ onSwitchTab }: R2ManagerProps) {
                   disabled={deleting.has('batch')}
                   className="depth-primary border border-primary/25 bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  {deleting.has('batch') ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Mantener el más antiguo'}
+                  {deleting.has('batch') ? 'Eliminando...' : 'Mantener el más antiguo'}
                 </Button>
                 <Button
                   size="sm"
@@ -266,7 +276,7 @@ export function R2Manager({ onSwitchTab }: R2ManagerProps) {
             
             {!items ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary-tint" />
+                <span className="h-2 w-2 rounded-full bg-primary-tint animate-pulse" />
               </div>
             ) : items.length === 0 ? (
               <div className="text-center py-8 text-slate-400">
@@ -278,7 +288,7 @@ export function R2Manager({ onSwitchTab }: R2ManagerProps) {
                   <button
                     key={item._id}
                     onClick={() => setSelectedItem(item)}
-                    className="group relative aspect-square overflow-hidden rounded-xl border border-secondary/15 bg-slate-950/50 transition hover:border-primary/30"
+                    className="group relative aspect-square overflow-hidden rounded-xl border border-secondary/15 bg-slate-950/50 transition card-hover"
                   >
                     {item.type === 'image' ? (
                       <Image
@@ -365,7 +375,7 @@ export function R2Manager({ onSwitchTab }: R2ManagerProps) {
                   className="w-full depth-secondary border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20"
                 >
                   {deleting.has(selectedItem._id) ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    'Eliminando...'
                   ) : (
                     <Trash2 className="mr-2 h-4 w-4" />
                   )}

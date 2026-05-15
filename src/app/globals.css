@@ -45,6 +45,16 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  --opacity-subtle: 0.05;
+  --opacity-light: 0.10;
+  --opacity-medium: 0.15;
+  --opacity-default: 0.20;
+  --opacity-strong: 0.25;
+  --opacity-heavy: 0.30;
+  --opacity-prominent: 0.40;
+  --opacity-intense: 0.50;
+  --opacity-solid: 0.90;
 }
 
 :root {
@@ -127,7 +137,9 @@
       radial-gradient(circle at 88% 16%, color-mix(in oklab, var(--secondary) 28%, transparent) 0, transparent 26%),
       radial-gradient(circle at 48% 100%, color-mix(in oklab, var(--secondary) 12%, transparent) 0, transparent 30%),
       linear-gradient(155deg, #07111b 0%, #0b2236 46%, #14070b 100%);
+    /* 100vh fallback — 100dvh overrides on supporting browsers for mobile viewport fix */
     min-height: 100vh;
+    min-height: 100dvh;
   }
 }
 
@@ -205,5 +217,50 @@
     background-size: auto, 18px 18px, 22px 22px;
     mix-blend-mode: screen;
     opacity: 0.45;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 25%,
+      color-mix(in oklab, var(--secondary) 8%, white 4%) 50%,
+      transparent 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  .text-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .text-sublabel {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .text-fine {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+  }
+
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px color-mix(in oklab, var(--primary) 15%, transparent);
+    border-color: color-mix(in oklab, var(--primary) 25%, transparent);
   }
 }

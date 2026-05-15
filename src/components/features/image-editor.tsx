@@ -12,13 +12,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Loader2, Upload, X, Maximize2, Eraser } from 'lucide-react'
+import { Skeleton, SkeletonShimmer } from '@/components/ui/skeleton'
+import { Upload, X, Maximize2, Eraser, Pencil, ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import { upscaleImage, removeBackground } from '@/lib/actions'
+import { Textarea } from '@/components/ui/textarea'
+import { Slider } from '@/components/ui/slider'
+import { upscaleImage, removeBackground, editImage } from '@/lib/actions'
 import { estimateImageTransformCostFromUrl } from '@/lib/image-dimensions'
 import { useGallery } from '@/stores/gallery'
-import { 
+import {
   UPSCALE_MODELS, 
   BG_REMOVAL_MODELS,
   getCostTierLabel,
@@ -27,19 +29,32 @@ import {
   type UpscaleModelId,
   type BgRemovalModelId
 } from '@/types'
+import {
+  IMAGE_OUTPUT_FORMAT_OPTIONS,
+  IMAGE_QUALITY_OPTIONS,
+} from '@/lib/image-model-controls'
 import type { GeneratedMediaBase } from '@/types'
+import type { FalImageOutput, FalImageEditOutput } from '@/types/fal'
 import { ModelInfoTooltip } from '@/components/model-info-tooltip'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { GalleryPicker } from '@/components/gallery-picker'
 
-type EditMode = 'upscale' | 'remove-bg'
+type EditMode = 'upscale' | 'remove-bg' | 'edit'
+
+const EDIT_MODEL_ID = 'openai/gpt-image-2/edit'
 
 export function ImageEditor() {
   const [imageUrl, setImageUrl] = useState('')
   const [mode, setMode] = useState<EditMode>('upscale')
   const [upscaleModel, setUpscaleModel] = useState<UpscaleModelId>('fal-ai/imageutils/super-resolution')
   const [bgRemovalModel, setBgRemovalModel] = useState<BgRemovalModelId>('fal-ai/imageutils/rembg')
+  const [editPrompt, setEditPrompt] = useState('')
+  const [editQuality, setEditQuality] = useState('high')
+  const [editOutputFormat, setEditOutputFormat] = useState('png')
+  const [editNumImages, setEditNumImages] = useState(1)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<string | null>(null)
+  const [galleryPickerOpen, setGalleryPickerOpen] = useState(false)
   
   const addToGallery = useGallery((s) => s.addWithPersistence)
   const addPending = useGallery((s) => s.addPending)
@@ -62,10 +77,18 @@ export function ImageEditor() {
       return
     }
 
-    const modelUsed = mode === 'upscale' ? upscaleModel : bgRemovalModel
+    if (mode === 'edit' && !editPrompt.trim()) {
+      toast.error('Ingresa un prompt para la edición')
+      return
+    }
+
+    const modelUsed = mode === 'upscale' ? upscaleModel : mode === 'remove-bg' ? bgRemovalModel : EDIT_MODEL_ID
     const config = mode === 'upscale'
       ? getUpscaleModelConfig(upscaleModel)
-      : getBgRemovalModelConfig(bgRemovalModel)
+      : mode === 'remove-bg'
+        ? getBgRemovalModelConfig(bgRemovalModel)
+        : { costTier: 'premium' as const, name: 'GPT Image 2 Edit' }
+    const promptLabel = mode === 'upscale' ? 'Upscalado' : mode === 'remove-bg' ? 'Fondo eliminado' : editPrompt
     let estimatedCost: number | undefined
 
     if (mode === 'upscale') {
@@ -83,7 +106,7 @@ export function ImageEditor() {
 
     let pendingIds = addPending({
       type: 'image',
-      prompt: mode === 'upscale' ? 'Upscalado' : 'Fondo eliminado',
+      prompt: promptLabel,
       model: modelUsed,
       costTier: config?.costTier,
       metadata: {
@@ -102,6 +125,15 @@ export function ImageEditor() {
           imageUrl,
           model: upscaleModel 
         })
+      } else if (mode === 'edit') {
+        data = await editImage({
+          imageUrl,
+          prompt: editPrompt,
+          model: EDIT_MODEL_ID,
+          quality: editQuality,
+          numImages: editNumImages,
+          outputFormat: editOutputFormat,
+        })
       } else {
         data = await removeBackground({ 
           imageUrl,
@@ -109,7 +141,15 @@ export function ImageEditor() {
         })
       }
 
-      const resultUrl = data.image?.url
+      let resultUrl: string | undefined
+
+      if (mode === 'edit') {
+        const editData = data as FalImageOutput
+        resultUrl = editData.images?.[0]?.url ?? editData.image?.url
+      } else {
+        const editOutput = data as FalImageEditOutput
+        resultUrl = editOutput.image?.url
+      }
       
       if (resultUrl) {
         removePending(pendingIds)
@@ -148,6 +188,7 @@ export function ImageEditor() {
   }
 
   return (
+    <>
     <TooltipProvider>
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4">
@@ -173,18 +214,30 @@ export function ImageEditor() {
                 </Button>
               </Card>
             ) : (
-              <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 hover:border-muted-foreground/50">
-                <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  Sube una imagen
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-              </label>
+              <div className="flex gap-2">
+                <label className="flex flex-1 aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 hover:border-muted-foreground/50">
+                  <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    Sube una imagen
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setGalleryPickerOpen(true)}
+                  className="flex flex-1 aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-primary/25 bg-primary/5 hover:border-primary/50 hover:bg-primary/10 transition"
+                >
+                  <ImageIcon className="mb-2 h-8 w-8 text-primary/60" />
+                  <span className="text-sm text-primary/80">
+                    De la galería
+                  </span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -206,6 +259,12 @@ export function ImageEditor() {
                 <div className="flex items-center gap-2">
                   <Eraser className="h-4 w-4" />
                   Remove Background
+                </div>
+              </SelectItem>
+              <SelectItem value="edit">
+                <div className="flex items-center gap-2">
+                  <Pencil className="h-4 w-4" />
+                  Edit Image
                 </div>
               </SelectItem>
             </SelectContent>
@@ -276,22 +335,80 @@ export function ImageEditor() {
           </div>
         )}
 
+        {mode === 'edit' && (
+          <>
+            <div className="space-y-2">
+              <Label>Prompt de edición</Label>
+              <Textarea
+                placeholder="Describe los cambios que quieres hacer..."
+                value={editPrompt}
+                onChange={(e) => setEditPrompt(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Calidad</Label>
+                <Select value={editQuality} onValueChange={setEditQuality}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {IMAGE_QUALITY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Formato</Label>
+                <Select value={editOutputFormat} onValueChange={setEditOutputFormat}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {IMAGE_OUTPUT_FORMAT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Número de imágenes: {editNumImages}</Label>
+              <Slider
+                value={[editNumImages]}
+                onValueChange={([v]) => setEditNumImages(v)}
+                min={1}
+                max={4}
+                step={1}
+              />
+            </div>
+          </>
+        )}
+
         <Button
           onClick={handleProcess}
-          disabled={loading || !imageUrl}
+          disabled={loading || !imageUrl || (mode === 'edit' && !editPrompt.trim())}
           className="w-full"
         >
           {loading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <span className="mr-2 h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
               Procesando...
             </>
           ) : (
             <>
               {mode === 'upscale' ? (
                 <Maximize2 className="mr-2 h-4 w-4" />
-              ) : (
+              ) : mode === 'remove-bg' ? (
                 <Eraser className="mr-2 h-4 w-4" />
+              ) : (
+                <Pencil className="mr-2 h-4 w-4" />
               )}
               Procesar
             </>
@@ -303,9 +420,8 @@ export function ImageEditor() {
         <Card className="relative aspect-square w-full max-w-md overflow-hidden bg-muted/50">
           {loading ? (
             <>
-              <Skeleton className="h-full w-full rounded-none" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/45">
-                <Loader2 className="h-8 w-8 animate-spin text-foreground" />
+              <SkeletonShimmer className="h-full w-full rounded-none" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                 <p className="text-sm font-medium text-foreground">Procesando imagen...</p>
               </div>
             </>
@@ -321,8 +437,10 @@ export function ImageEditor() {
             <div className="flex h-full items-center justify-center text-muted-foreground">
               {mode === 'upscale' ? (
                 <Maximize2 className="h-12 w-12 opacity-50" />
-              ) : (
+              ) : mode === 'remove-bg' ? (
                 <Eraser className="h-12 w-12 opacity-50" />
+              ) : (
+                <Pencil className="h-12 w-12 opacity-50" />
               )}
             </div>
           )}
@@ -330,5 +448,12 @@ export function ImageEditor() {
       </div>
     </div>
     </TooltipProvider>
+    <GalleryPicker
+      open={galleryPickerOpen}
+      onOpenChange={setGalleryPickerOpen}
+      mediaType="image"
+      onSelect={(url) => setImageUrl(url)}
+    />
+    </>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { Info, Zap, Target, Coins } from 'lucide-react'
+import { Info, Zap, Target, Coins, AlertTriangle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
   Tooltip,
@@ -71,6 +71,18 @@ export function ModelInfoTooltip({ info, costTier, modelName }: ModelInfoTooltip
                   </Badge>
                 ))}
               </div>
+            </div>
+          )}
+          {info?.warnings && info.warnings.length > 0 && (
+            <div className="space-y-1 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-2">
+              <p className="flex items-center gap-1 text-xs font-medium text-yellow-600 dark:text-yellow-400">
+                <AlertTriangle className="h-3 w-3" /> Advertencia
+              </p>
+              <ul className="space-y-0.5 pl-4 text-xs text-yellow-700 dark:text-yellow-300">
+                {info.warnings.map((warning, i) => (
+                  <li key={i}>• {warning}</li>
+                ))}
+              </ul>
             </div>
           )}
           {costConfig && (

@@ -78,12 +78,12 @@ export function CostEstimatePreview({
               <p className="font-semibold">fal</p>
               <p className="text-sm">{estimate.details}</p>
               {estimate.note ? (
-                <p className="text-xs opacity-85">{estimate.note}</p>
+                <p className="text-xs opacity-90">{estimate.note}</p>
               ) : null}
-              <p className="text-xs opacity-75">
+              <p className="text-xs opacity-80">
                 Tipo de cambio de referencia: 1 USD ~= {formatCostEstimateMxn(1, USD_TO_MXN_RATE)}
               </p>
-              <p className="text-xs opacity-75">Estimacion previa y conservadora; el cobro real puede variar.</p>
+              <p className="text-xs opacity-80">Estimacion previa y conservadora; el cobro real puede variar.</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

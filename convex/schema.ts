@@ -19,9 +19,24 @@ export default defineSchema({
     aspectRatio: v.optional(v.string()),
     resolution: v.optional(v.string()),
     costTier: v.optional(v.string()),
+    estimatedCost: v.optional(v.number()),
     
     createdAt: v.number(),
     userId: v.optional(v.string()),
   }).index("by_created", ["createdAt"])
-    .index("by_user", ["userId"]),
+    .index("by_user", ["userId"])
+    .index("by_user_created", ["userId", "createdAt"]),
+
+  collections: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    itemIds: v.array(v.string()),
+    coverImageId: v.optional(v.string()),
+    color: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    userId: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_updated", ["userId", "updatedAt"]),
 });

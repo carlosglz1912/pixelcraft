@@ -3,6 +3,30 @@ import { registerRoutes } from "@gilhrpenner/convex-files-control";
 import { components, api } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+function corsResponse(body: string, init?: ResponseInit & { status?: number }) {
+  const base = (init?.headers && typeof init.headers === "object" && !Array.isArray(init.headers))
+    ? init.headers as Record<string, string>
+    : {};
+  return new Response(body, {
+    status: init?.status,
+    headers: {
+      ...CORS_HEADERS,
+      "Content-Type": "application/json",
+      ...base,
+    },
+  });
+}
+
+function corsOptionsHandler() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
 const http = httpRouter();
 
 const r2Config = process.env.R2_ACCOUNT_ID ? {
@@ -30,37 +54,82 @@ registerRoutes(http, components.convexFilesControl, {
 
 http.route({
   path: "/files/persistFromUrl",
+  method: "OPTIONS",
+  handler: httpAction(async () => corsOptionsHandler()),
+});
+http.route({
+  path: "/files/persistFromUrl",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const body = await request.json();
     const result = await ctx.runAction(api.files.persistFromUrl, body as any);
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return corsResponse(JSON.stringify(result));
   }),
 });
 
+http.route({
+  path: "/files/preparePersistUpload",
+  method: "OPTIONS",
+  handler: httpAction(async () => corsOptionsHandler()),
+});
 http.route({
   path: "/files/preparePersistUpload",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const body = await request.json();
     const result = await ctx.runMutation(api.files.generateUploadUrl, body as any);
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return corsResponse(JSON.stringify(result));
   }),
 });
 
+http.route({
+  path: "/files/finalizePersistUpload",
+  method: "OPTIONS",
+  handler: httpAction(async () => corsOptionsHandler()),
+});
 http.route({
   path: "/files/finalizePersistUpload",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const body = await request.json();
     const result = await ctx.runMutation(api.files.finalizeUpload, body as any);
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return corsResponse(JSON.stringify(result));
+  }),
+});
+
+http.route({
+  path: "/api/media/list",
+  method: "OPTIONS",
+  handler: httpAction(async () => corsOptionsHandler()),
+});
+http.route({
+  path: "/api/media/list",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const userId = url.searchParams.get("userId") || undefined;
+    const limit = parseInt(url.searchParams.get("limit") || "50", 10);
+
+    const result = userId
+      ? await ctx.runQuery(api.files.listByUser, { userId, limit })
+      : await ctx.runQuery(api.files.list, { limit });
+
+    return corsResponse(JSON.stringify(result));
+  }),
+});
+
+http.route({
+  path: "/api/media/delete",
+  method: "OPTIONS",
+  handler: httpAction(async () => corsOptionsHandler()),
+});
+http.route({
+  path: "/api/media/delete",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json() as { id: string };
+    const result = await ctx.runMutation(api.files.remove, { id: body.id as any });
+    return corsResponse(JSON.stringify(result));
   }),
 });
 

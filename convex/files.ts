@@ -54,6 +54,7 @@ export const finalizeUpload = mutation({
         aspectRatio: v.optional(v.string()),
         resolution: v.optional(v.string()),
         costTier: v.optional(v.string()),
+        estimatedCost: v.optional(v.number()),
       }),
     ),
     expiresAt: v.optional(v.union(v.null(), v.number())),
@@ -170,7 +171,7 @@ export const listByUser = query({
     
     const items = await ctx.db
       .query("media")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user_created", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(limit);
     
@@ -316,6 +317,7 @@ export const persistFromUrl = action({
         aspectRatio: v.optional(v.string()),
         resolution: v.optional(v.string()),
         costTier: v.optional(v.string()),
+        estimatedCost: v.optional(v.number()),
       }),
     ),
   },
